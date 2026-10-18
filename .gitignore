@@ -1,0 +1,7 @@
+.cache
+.vscode
+build
+.clang-format
+.clangd
+.resources
+compile_commands.json
