@@ -51,12 +51,10 @@ struct PointLight : LightColors {
 // nothing at outerCutoff; both are half-angles in radians. Owns its shadow map.
 struct Spotlight : LightColors {
     Spotlight(const glm::vec3& lightPosition, const glm::vec3& lightDirection,
-              const LightColors& colors, const Attenuation& lightAttenuation,
-              float innerCutoffAngle, float outerCutoffAngle);
+              const LightColors& colors, float innerCutoffAngle, float outerCutoffAngle);
 
     glm::vec3 position;
     glm::vec3 direction;
-    Attenuation attenuation;
     float innerCutoff;  // phi
     float outerCutoff;  // gamma
     ShadowFrameBuffer shadowMap;

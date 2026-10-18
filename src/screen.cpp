@@ -9,7 +9,7 @@
 
 Screen::Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
                const ShaderProgram& shader)
-    : _framebuffer(width, height), _shader(shader) {
+    : _framebuffer(width, height), _canvas(_framebuffer.texture()), _shader(shader) {
     _parameters.clearColor = clearColor;
 }
 
@@ -46,9 +46,6 @@ void Screen::present(const glm::mat4& model, float gamma, const ScreenParameters
     TextureUnits units;
     ShaderProgramBinding shader(_shader);
     shader.setMat4("model", model);
-    TextureDrawBinding screenTexture(units, _framebuffer.texture());
-    shader.setTexture("screenTexture", screenTexture);
-    shader.setInt("sampleCount", _framebuffer.texture().samples());
     shader.setFloat("gamma", gamma);
     shader.setBool("applySobel", effects.sobelOn);
     shader.setBool("applyMSAA", effects.msaaOn);

@@ -45,8 +45,7 @@ public:
 private:
     void drawSkyboxes(const Scene& scene, TextureUnits& units) const;
     void drawObjects(const Scene& scene, const Camera& camera, TextureUnits& units) const;
-    void drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader,
-                           TextureUnits& units) const;
+    void drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader) const;
 
     SceneShaders _shaders;
     UniformBuffer& _ubo;

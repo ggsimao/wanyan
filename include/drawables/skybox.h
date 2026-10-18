@@ -12,6 +12,7 @@ public:
     explicit Skybox(CubeMap texture, float size = 10.0f);
 
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const override;
+    void drawPlain(const ShaderProgramBinding& shader) const override;
 
     const CubeMap& texture() const;
 

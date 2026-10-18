@@ -14,8 +14,8 @@ out vec4 fragColor;
 #define NR_SPECULAR_TEXTURES 3
 
 struct Material {
-    sampler2D Diffuse[NR_DIFFUSE_TEXTURES];
-    sampler2D Specular[NR_SPECULAR_TEXTURES];
+    sampler2D diffuseTextures[NR_DIFFUSE_TEXTURES];
+    sampler2D specularTextures[NR_SPECULAR_TEXTURES];
     float shininess;
     int loadedDiffuse;
     int loadedSpecular;
@@ -28,7 +28,7 @@ void main() {
     float texture_alpha = 0.0;
     for (int i = 0; i < material.loadedDiffuse; i++) {
         texture_alpha =
-            max(texture_alpha, texture(material.Diffuse[i], fs_in.texCoords).a);
+            max(texture_alpha, texture(material.diffuseTextures[i], fs_in.texCoords).a);
     }
 
     if (texture_alpha == 0) {

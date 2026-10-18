@@ -65,24 +65,22 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
     render_state::CullFace frontFaces(GL_FRONT);  // reduces shadow acne
 
     ShaderProgramBinding shader(_shaders.shadow);
-    TextureUnits units;
 
     const auto render = [&](const ShadowFrameBuffer& shadowMap, const LightSpace& space) {
         ShadowDrawBinding target(shadowMap);  // also sets the viewport to the map's size
         target.clearDepth();
         _ubo.setProjectionMat(space.projection);
         _ubo.setViewMat(space.view);
-        drawShadowCasters(scene, shader, units);
+        drawShadowCasters(scene, shader);
     };
     render(scene.lighting.directional.shadowMap, directionalLightSpace(scene.lighting.directional));
     render(scene.lighting.spotlight.shadowMap, spotlightSpace(scene.lighting.spotlight));
 }
 
-void SceneRenderer::drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader,
-                                      TextureUnits& units) const {
+void SceneRenderer::drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader) const {
     for (const SceneObject& object : scene.objects) {
         _ubo.setModelMat(object.model());
-        object.draw(shader, units);
+        object.drawPlain(shader);
     }
 }
 
@@ -162,7 +160,7 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
         if (_options.visualizeNormals) {
             ShaderProgramBinding debug(_shaders.debug);
-            object->draw(debug, units);
+            object->drawPlain(debug);
         }  // the object program is back in use here
 
         if (object->hasOutline()) {

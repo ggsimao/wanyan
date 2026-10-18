@@ -31,6 +31,11 @@ class Screen {
 public:
     Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
            const ShaderProgram& shader);
+    // Deleted because _canvas points to framebuffer
+    Screen(const Screen&) = delete;
+    Screen& operator=(const Screen&) = delete;
+    Screen(Screen&&) = delete;
+    Screen& operator=(Screen&&) = delete;
 
     // Renders the scene, as seen by the camera, into this screen's framebuffer.
     void drawOnFramebuffer(const SceneRenderer& renderer, const Scene& scene,
