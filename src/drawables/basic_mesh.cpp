@@ -31,10 +31,18 @@ void BasicMesh::draw(const ShaderProgramBinding& shader, TextureUnits& units) co
     _buffers.draw();
 }
 
+void BasicMesh::drawPlain(const ShaderProgramBinding& /*shader*/) const {
+    _buffers.draw();
+}
+
 void BasicMesh::drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
                               GLsizei instances) const {
     MaterialDrawBinding material(units, _material);
     shader.setMaterial("material", material);
+    _buffers.drawInstanced(instances);
+}
+
+void BasicMesh::drawPlainInstanced(const ShaderProgramBinding& /*shader*/, GLsizei instances) const {
     _buffers.drawInstanced(instances);
 }
 

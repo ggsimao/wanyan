@@ -4,22 +4,26 @@
 
 #include <cmath>
 
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
-ShaderProgram::ShaderProgram(const VertexShader& vertex, const FragmentShader& fragment) {
+ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
+                             const FragmentShader& fragment)
+    : _label(std::move(label)) {
     link({vertex.id(), fragment.id()});
 }
 
-ShaderProgram::ShaderProgram(const VertexShader& vertex, const GeometryShader& geometry,
-                             const FragmentShader& fragment) {
+ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
+                             const GeometryShader& geometry, const FragmentShader& fragment)
+    : _label(std::move(label)) {
     link({vertex.id(), geometry.id(), fragment.id()});
 }
 
 void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
     _id = glCreateProgram();
     if (_id == 0) {
-        throw std::runtime_error("Couldn't make a shader program");
+        throw std::runtime_error("Couldn't make shader program \"" + _label + "\"");
     }
 
     for (GLuint shader : shaders) {
@@ -38,20 +42,25 @@ void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
         // Called from a constructor, which won't run the destructor on throw.
         const std::string log = infoLog();
         release();
-        throw std::runtime_error("Program link error: " + log);
+        throw std::runtime_error("Program \"" + _label + "\" link error: " + log);
     }
+
+    // Names the program in GL's own debug messages and in graphics debuggers.
+    // -1: the label is null-terminated.
+    glObjectLabel(GL_PROGRAM, _id, -1, _label.c_str());
 }
 
-ShaderProgram ShaderProgram::fromFiles(const std::filesystem::path& vertex,
+ShaderProgram ShaderProgram::fromFiles(std::string label, const std::filesystem::path& vertex,
                                        const std::filesystem::path& fragment) {
-    return ShaderProgram(VertexShader::fromFile(vertex), FragmentShader::fromFile(fragment));
+    return ShaderProgram(std::move(label), VertexShader::fromFile(vertex),
+                         FragmentShader::fromFile(fragment));
 }
 
-ShaderProgram ShaderProgram::fromFiles(const std::filesystem::path& vertex,
+ShaderProgram ShaderProgram::fromFiles(std::string label, const std::filesystem::path& vertex,
                                        const std::filesystem::path& geometry,
                                        const std::filesystem::path& fragment) {
-    return ShaderProgram(VertexShader::fromFile(vertex), GeometryShader::fromFile(geometry),
-                         FragmentShader::fromFile(fragment));
+    return ShaderProgram(std::move(label), VertexShader::fromFile(vertex),
+                         GeometryShader::fromFile(geometry), FragmentShader::fromFile(fragment));
 }
 
 ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept : _id(std::exchange(other._id, 0)) {}
@@ -80,7 +89,14 @@ GLuint ShaderProgram::id() const {
 }
 
 GLint ShaderProgram::uniformLocation(const std::string& name) const {
-    return glGetUniformLocation(_id, name.c_str());
+    const GLint location = glGetUniformLocation(_id, name.c_str());
+    if (location == -1) {
+        // Either the name isn't in the shader (a typo or a mismatch), or the
+        // compiler removed it as unused. GL can't tell the two apart.
+        std::cerr << "Warning: uniform \"" << name << "\" not found in program \"" << _label
+                  << "\"\n";
+    }
+    return location;
 }
 
 void ShaderProgram::bind() const {
@@ -170,7 +186,6 @@ void ShaderProgramBinding::setPointLight(const std::string& name, const PointLig
 void ShaderProgramBinding::setSpotlight(const std::string& name, const Spotlight& light) const {
     setVec3(name + ".position", light.position);
     setVec3(name + ".direction", light.direction);
-    setAttenuation(name, light.attenuation);
     setLightColors(name, light);
     // The shader compares cosines, which avoids an acos per fragment.
     setFloat(name + ".phiCos", std::cos(light.innerCutoff));

@@ -13,11 +13,15 @@ public:
     virtual ~Drawable() = default;
 
     virtual void draw(const ShaderProgramBinding& shader, TextureUnits& units) const = 0;
+    virtual void drawPlain(const ShaderProgramBinding& shader) const = 0;
 
     // Default: things that don't support instancing draw a single copy.
     virtual void drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
                                GLsizei /*instances*/) const {
         draw(shader, units);
+    }
+    virtual void drawPlainInstanced(const ShaderProgramBinding& shader, GLsizei /*instances*/) const {
+        drawPlain(shader);
     }
 
     // Default: nothing to set up for things that don't support instancing.

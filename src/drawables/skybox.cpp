@@ -25,6 +25,10 @@ void Skybox::draw(const ShaderProgramBinding& shader, TextureUnits& units) const
     _buffers.draw();
 }
 
+void Skybox::drawPlain(const ShaderProgramBinding& /*shader*/) const {
+    _buffers.draw();
+}
+
 const CubeMap& Skybox::texture() const {
     return _texture;
 }

@@ -25,8 +25,8 @@ struct Spotlight;
 // glUniform* acts on whichever program is currently in use.
 class ShaderProgram {
 public:
-    ShaderProgram(const VertexShader& vertex, const FragmentShader& fragment);
-    ShaderProgram(const VertexShader& vertex, const GeometryShader& geometry,
+    ShaderProgram(std::string label, const VertexShader& vertex, const FragmentShader& fragment);
+    ShaderProgram(std::string label, const VertexShader& vertex, const GeometryShader& geometry,
                   const FragmentShader& fragment);
     ShaderProgram(const ShaderProgram&) = delete;
     ShaderProgram& operator=(const ShaderProgram&) = delete;
@@ -34,14 +34,14 @@ public:
     ShaderProgram& operator=(ShaderProgram&& other) noexcept;
     ~ShaderProgram();
 
-    static ShaderProgram fromFiles(const std::filesystem::path& vertex,
+    static ShaderProgram fromFiles(std::string label, const std::filesystem::path& vertex,
                                    const std::filesystem::path& fragment);
-    static ShaderProgram fromFiles(const std::filesystem::path& vertex,
-                                   const std::filesystem::path& geometry,
-                                   const std::filesystem::path& fragment);
+    static ShaderProgram fromFiles(std::string label, const std::filesystem::path& vertex,
+                                   const std::filesystem::path& geometry, const std::filesystem::path& fragment);
 
     GLuint id() const;
-    // -1 if the program has no active uniform with that name; setting -1 is a no-op.
+    // -1 if the program has no active uniform with that name; setting -1 is a
+    // no-op. Every miss prints a warning naming the uniform and the program.
     GLint uniformLocation(const std::string& name) const;
 
     void bind() const;
@@ -52,6 +52,7 @@ private:
     std::string infoLog() const;
     void release() noexcept;
 
+    std::string _label;
     GLuint _id = 0;
 };
 

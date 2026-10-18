@@ -148,10 +148,22 @@ void Model::draw(const ShaderProgramBinding& shader, TextureUnits& units) const 
     }
 }
 
+void Model::drawPlain(const ShaderProgramBinding& shader) const {
+    for (const BasicMesh& mesh : _meshes) {
+        mesh.drawPlain(shader);
+    }
+}
+
 void Model::drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
                           GLsizei instances) const {
     for (const BasicMesh& mesh : _meshes) {
         mesh.drawInstanced(shader, units, instances);
+    }
+}
+
+void Model::drawPlainInstanced(const ShaderProgramBinding& shader, GLsizei instances) const {
+    for (const BasicMesh& mesh : _meshes) {
+        mesh.drawPlainInstanced(shader, instances);
     }
 }
 

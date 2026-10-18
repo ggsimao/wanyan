@@ -22,8 +22,10 @@ public:
     static BasicMesh square(float side, Material material = Material({}, {}, 1.0f));
 
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const override;
+    void drawPlain(const ShaderProgramBinding& shader) const override;
     void drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
                        GLsizei instances) const override;
+    void drawPlainInstanced(const ShaderProgramBinding& shader, GLsizei instances) const override;
     void setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const override;
 
     const Material& material() const;

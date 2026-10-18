@@ -90,7 +90,7 @@ namespace {
         }
 
         Spotlight flashlight(camera.pos(), camera.dir(),
-                             {ambient / 4.0f, diffuse / 2.0f, specular / 2.0f}, attenuation,
+                             {ambient / 4.0f, diffuse / 2.0f, specular / 2.0f},
                              glm::radians(15.0f), glm::radians(20.0f));
 
         return Lighting{std::move(sun), std::move(lamps), std::move(flashlight)};
@@ -169,13 +169,13 @@ SceneShaders DemoShaders::forRenderer() const {
 
 DemoShaders loadDemoShaders() {
     return {
-        ShaderProgram::fromFiles(asset(REGULAR_VERT_SHADER), asset(OBJECT_FRAG_SHADER)),
-        ShaderProgram::fromFiles(asset(REGULAR_VERT_SHADER), asset(DEBUG_GEO_SHADER),
+        ShaderProgram::fromFiles("Object", asset(REGULAR_VERT_SHADER), asset(OBJECT_FRAG_SHADER)),
+        ShaderProgram::fromFiles("Debug", asset(REGULAR_VERT_SHADER), asset(DEBUG_GEO_SHADER),
                                  asset(DEBUG_FRAG_SHADER)),
-        ShaderProgram::fromFiles(asset(REGULAR_VERT_SHADER), asset(BUFFER_FRAG_SHADER)),
-        ShaderProgram::fromFiles(asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
-        ShaderProgram::fromFiles(asset(SKYBOX_VERT_SHADER), asset(SKYBOX_FRAG_SHADER)),
-        ShaderProgram::fromFiles(asset(SHADOW_VERT_SHADER), asset(SHADOW_FRAG_SHADER)),
+        ShaderProgram::fromFiles("Buffer", asset(REGULAR_VERT_SHADER), asset(BUFFER_FRAG_SHADER)),
+        ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
+        ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER), asset(SKYBOX_FRAG_SHADER)),
+        ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER), asset(SHADOW_FRAG_SHADER)),
     };
 }
 
