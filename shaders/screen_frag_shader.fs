@@ -5,24 +5,22 @@ out vec4 fragColor;
 
 uniform sampler2DMS screenTexture;
 uniform int sampleCount;
-uniform bool applySobel, applyMSAA;
+uniform bool applyFilter, applyMSAA;
 uniform float gamma;
-
-const float offset = 1.0 / 600.0;
 
 const float kernel[3][3] =
     float[][](float[](2, 2, 2), float[](2, -15, 2), float[](2, 2, 2));
 
 void main() {
+    ivec2 tex_size = textureSize(screenTexture);
+    ivec2 center = ivec2(texCoords * tex_size);
     fragColor = vec4(0);
-    if (applySobel && applyMSAA) {
+    if (applyFilter && applyMSAA) {
         for (int s = 0; s < sampleCount; s++) {
             vec4 sampleColor = vec4(0);
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    ivec2 texelCoords =
-                        ivec2((texCoords + ivec2(i - 1, j - 1) * offset) *
-                              textureSize(screenTexture));
+                    ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0), tex_size - ivec2(1, 1));
                     sampleColor += texelFetch(screenTexture, texelCoords, s) *
                                    kernel[i][j];
                 }
@@ -30,25 +28,21 @@ void main() {
             fragColor += sampleColor / sampleCount;
         }
 
-    } else if (applySobel && !applyMSAA) {
+    } else if (applyFilter && !applyMSAA) {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                ivec2 texelCoords =
-                    ivec2((texCoords + ivec2(i - 1, j - 1) * offset) *
-                          textureSize(screenTexture));
+                ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0), tex_size - ivec2(1, 1));
                 fragColor +=
                     texelFetch(screenTexture, texelCoords, 0) * kernel[i][j];
             }
         }
     } else if (applyMSAA) {
         for (int s = 0; s < sampleCount; s++) {
-            ivec2 texelCoords = ivec2(texCoords * textureSize(screenTexture));
-            vec4 sampleColor = texelFetch(screenTexture, texelCoords, s);
+            vec4 sampleColor = texelFetch(screenTexture, center, s);
             fragColor += sampleColor / sampleCount;
         }
     } else {
-        ivec2 texelCoords = ivec2(texCoords * textureSize(screenTexture));
-        fragColor = texelFetch(screenTexture, texelCoords, 0);
+        fragColor = texelFetch(screenTexture, center, 0);
     }
     fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
 }

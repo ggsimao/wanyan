@@ -8,6 +8,7 @@
 #include "textures/material.h"
 #include "textures/texture_2d.h"
 
+#include <glm/geometric.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
 
@@ -81,7 +82,8 @@ namespace {
         const glm::vec3 specular(1.0f);
         const Attenuation attenuation{1.0f, 0.5f, 0.25f};
 
-        DirectionalLight sun({1.0f, -2.0f, 1.5f}, {ambient / 4.0f, diffuse, specular});
+        glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
+        DirectionalLight sun(glm::normalize(sun_dir), {ambient / 4.0f, diffuse, specular});
 
         std::vector<PointLight> lamps;
         for (const glm::vec3& position : {glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(-1.0f, -2.0f, -1.0f),

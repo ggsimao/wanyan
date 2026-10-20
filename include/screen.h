@@ -17,14 +17,14 @@ inline constexpr float DEFAULT_GAMMA = 2.2f;
 
 struct ScreenParameters {
     glm::vec4 clearColor{0.0f};
-    bool sobelOn = false;
+    bool filterOn = false;
     bool msaaOn = false;
     float gamma = DEFAULT_GAMMA;
 };
 
 // An offscreen view of the scene: renders into its own multisampled
 // framebuffer, then presents it to the window or onto another screen through
-// a fullscreen canvas and the screen shader (MSAA resolve, Sobel, gamma).
+// a fullscreen canvas and the screen shader (MSAA resolve, border filter, gamma).
 // The canvas is drawn in clip space, so the screen shader takes its transform
 // as a plain `model` uniform rather than from the scene's Matrices block.
 class Screen {

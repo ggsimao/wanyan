@@ -47,7 +47,7 @@ void Screen::present(const glm::mat4& model, float gamma, const ScreenParameters
     ShaderProgramBinding shader(_shader);
     shader.setMat4("model", model);
     shader.setFloat("gamma", gamma);
-    shader.setBool("applySobel", effects.sobelOn);
+    shader.setBool("applyFilter", effects.filterOn);
     shader.setBool("applyMSAA", effects.msaaOn);
 
     _canvas.draw(shader, units);

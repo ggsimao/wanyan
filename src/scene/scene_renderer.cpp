@@ -21,6 +21,7 @@
 namespace {
     constexpr float NEAR_PLANE = 0.1f;
     constexpr float FAR_PLANE = 100.0f;
+    constexpr float SUN_DISTANCE = 20.0f;
     constexpr float ASPECT_RATIO = 1.0f;  // as in the Rust version, until window resizing
     const glm::vec3 WORLD_UP(0.0f, 1.0f, 0.0f);
 
@@ -34,8 +35,8 @@ namespace {
 
     LightSpace directionalLightSpace(const DirectionalLight& light) {
         // An orthographic box around the origin, looking along the light.
-        const glm::vec3 position = -light.direction;
-        return {glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, -2.0f, 10.0f),
+        const glm::vec3 position = -glm::normalize(light.direction) * SUN_DISTANCE;
+        return {glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 2.0f * SUN_DISTANCE),
                 glm::lookAt(position, glm::vec3(0.0f), WORLD_UP)};
     }
 
@@ -80,6 +81,7 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
 void SceneRenderer::drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader) const {
     for (const SceneObject& object : scene.objects) {
         _ubo.setModelMat(object.model());
+        _ubo.setNormalMat(object.normalMatrix());
         object.drawPlain(shader);
     }
 }
@@ -156,6 +158,7 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
     for (const SceneObject* object : drawOrder) {
         _ubo.setModelMat(object->model());
+        _ubo.setNormalMat(object->normalMatrix());
         object->draw(shader, units);
 
         if (_options.visualizeNormals) {
