@@ -6,7 +6,8 @@ namespace {
     constexpr GLintptr MODEL_OFFSET = 0 * MAT4_SIZE;
     constexpr GLintptr VIEW_OFFSET = 1 * MAT4_SIZE;
     constexpr GLintptr PROJECTION_OFFSET = 2 * MAT4_SIZE;
-    constexpr GLsizeiptr MATRICES_SIZE = 3 * MAT4_SIZE;
+    constexpr GLintptr NORMAL_OFFSET = 3 * MAT4_SIZE;
+    constexpr GLsizeiptr MATRICES_SIZE = 4 * MAT4_SIZE;
 
     static_assert(sizeof(glm::mat4) == 16 * sizeof(float),
                 "glm::mat4 must be tightly packed to match std140");
@@ -42,6 +43,10 @@ void UniformBuffer::setViewMat(const glm::mat4& view) {
 
 void UniformBuffer::setProjectionMat(const glm::mat4& projection) {
     setMat(PROJECTION_OFFSET, projection);
+}
+
+void UniformBuffer::setNormalMat(const glm::mat4& normal) {
+    setMat(NORMAL_OFFSET, normal);
 }
 
 void UniformBuffer::setMat(GLintptr offset, const glm::mat4& value) {

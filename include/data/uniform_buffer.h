@@ -12,6 +12,7 @@
 //         mat4 model;       // offset   0
 //         mat4 view;        // offset  64
 //         mat4 projection;  // offset 128
+//         mat4 normal;      // offset 192
 //     };
 //
 // Allocated on construction; bindBase() connects it to the block's binding point.
@@ -29,6 +30,7 @@ public:
     void setModelMat(const glm::mat4& model);
     void setViewMat(const glm::mat4& view);
     void setProjectionMat(const glm::mat4& projection);
+    void setNormalMat(const glm::mat4& normal);
 
 private:
     void setMat(GLintptr offset, const glm::mat4& value);
