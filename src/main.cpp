@@ -2,12 +2,14 @@
 #include "controls/controller_hub.h"
 #include "data/uniform_buffer.h"
 #include "debug/frame_stats.h"
+#include "debug/gl_debug.h"
 #include "platform.h"
 #include "program.h"
 #include "random_transform.h"
 #include "scene/demo_scene.h"
 #include "scene/scene_renderer.h"
 #include "screen.h"
+#include "textures/texture_2d.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -43,6 +45,15 @@ int main() {
         // First, so it's destroyed last: every GL object below must be
         // deleted while its context still exists.
         Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
+        debug::enableGlDebugOutput();
+        glDebugMessageInsert(
+            GL_DEBUG_SOURCE_APPLICATION,
+            GL_DEBUG_TYPE_OTHER,
+            1,
+            GL_DEBUG_SEVERITY_MEDIUM,
+            -1,
+            "Debug working."
+        );
 
         const DemoShaders shaders = loadDemoShaders();
         UniformBuffer matrices(MATRICES_BINDING);
@@ -58,7 +69,7 @@ int main() {
 
         Program program;
         ControllerHub controls;
-        FrameStats stats;
+        debug::FrameStats stats;
 
         using Clock = std::chrono::steady_clock;
         Clock::time_point previousFrame = Clock::now();
@@ -70,7 +81,7 @@ int main() {
             previousFrame = now;
 
             {
-                auto timer = stats.time(FrameStats::UPDATE);
+                auto timer = stats.time(debug::FrameStats::UPDATE);
                 controls.update(frameMilliseconds,
                                 {program, camera, scene.lighting.spotlight, renderer.options(),
                                  screen.parameters(), rockTransforms});
@@ -81,7 +92,7 @@ int main() {
             scene.lighting.spotlight.direction = camera.dir();
 
             {
-                auto timer = stats.time(FrameStats::INSTANCES);
+                auto timer = stats.time(debug::FrameStats::INSTANCES);
                 SceneObject& rocks = scene.objects[ROCKS];
                 assert(rocks.instanceCount() == rockTransforms.size());
                 for (std::size_t i = 0; i < rockTransforms.size(); ++i) {
@@ -91,7 +102,7 @@ int main() {
             }
 
             {
-                auto timer = stats.time(FrameStats::DRAW);
+                auto timer = stats.time(debug::FrameStats::DRAW);
                 renderer.renderShadowMaps(scene);  // once: shadows don't depend on the camera
                 screen.drawOnFramebuffer(renderer, scene, camera);
                 mirror.drawOnFramebuffer(renderer, scene, camera.invert());

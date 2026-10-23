@@ -1,5 +1,7 @@
 #include "platform.h"
 
+#include "debug/gl_debug.h"
+
 #include <GL/glew.h>
 
 #include <iostream>  // the debug callback
@@ -10,28 +12,6 @@ namespace {
     std::runtime_error sdlError(const std::string& what) {
         return std::runtime_error(what + ": " + SDL_GetError());
     }
-
-#ifndef NDEBUG
-    const char* severityName(GLenum severity) {
-        switch (severity) {
-            case GL_DEBUG_SEVERITY_HIGH:   return "error";
-            case GL_DEBUG_SEVERITY_MEDIUM: return "warning";
-            case GL_DEBUG_SEVERITY_LOW:    return "note";
-            default:                       return "info";
-        }
-    }
-
-    void GLAPIENTRY printDebugMessage(GLenum /*source*/, GLenum /*type*/, GLuint /*id*/,
-                                    GLenum severity, GLsizei /*length*/, const GLchar* message,
-                                    const void* /*userParam*/) {
-        // Some drivers report every buffer allocation as a notification;
-        // those would bury the messages that matter.
-        if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
-            return;
-        }
-        std::cerr << "OpenGL " << severityName(severity) << ": " << message << '\n';
-    }
-#endif
 }  // namespace
 
 Platform::Platform(const char* title, int width, int height) : _width(width), _height(height) {
@@ -46,9 +26,8 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);  // the shaders use GLSL 4.30
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);  // outlines
-#ifndef NDEBUG
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-#endif
+        if (debug::DEBUG_ON)
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
         _window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width,
                                    height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
@@ -74,16 +53,6 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
 
         SDL_GL_SetSwapInterval(1);            // vsync, as in Rust; failure isn't fatal
         SDL_SetRelativeMouseMode(SDL_TRUE);   // captures the mouse for the camera
-
-#ifndef NDEBUG
-        GLint flags = 0;
-        glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-        if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
-            glEnable(GL_DEBUG_OUTPUT);
-            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);  // report from inside the failing call
-            glDebugMessageCallback(printDebugMessage, nullptr);
-        }
-#endif
     } catch (...) {
         release();
         throw;

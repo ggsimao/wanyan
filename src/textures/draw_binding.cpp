@@ -12,7 +12,7 @@ GLint TextureUnits::reserve(GLint count) {
     return first;
 }
 
-void TextureUnits::release(GLint first, GLint count) {
+void TextureUnits::release(GLint first, [[maybe_unused]] GLint count) {
     assert(_next == first + count && "Texture draw bindings released out of order");
     _next = first;
 }
