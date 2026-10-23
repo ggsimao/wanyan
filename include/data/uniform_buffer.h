@@ -10,9 +10,8 @@
 //
 //     layout (std140) uniform Matrices {
 //         mat4 model;       // offset   0
-//         mat4 view;        // offset  64
-//         mat4 projection;  // offset 128
-//         mat4 normal;      // offset 192
+//         mat4 projView;        // offset  64
+//         mat4 normal;      // offset 128
 //     };
 //
 // Allocated on construction; bindBase() connects it to the block's binding point.
@@ -28,8 +27,7 @@ public:
     void bindBase() const;
 
     void setModelMat(const glm::mat4& model);
-    void setViewMat(const glm::mat4& view);
-    void setProjectionMat(const glm::mat4& projection);
+    void setProjViewMat(const glm::mat4& proj_view);
     void setNormalMat(const glm::mat4& normal);
 
 private:

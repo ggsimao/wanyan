@@ -14,6 +14,7 @@ public:
 
     virtual void draw(const ShaderProgramBinding& shader, TextureUnits& units) const = 0;
     virtual void drawPlain(const ShaderProgramBinding& shader) const = 0;
+    virtual void drawVertices(const ShaderProgramBinding& shader) const = 0;
 
     // Default: things that don't support instancing draw a single copy.
     virtual void drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
@@ -22,6 +23,9 @@ public:
     }
     virtual void drawPlainInstanced(const ShaderProgramBinding& shader, GLsizei /*instances*/) const {
         drawPlain(shader);
+    }
+    virtual void drawVerticesInstanced(const ShaderProgramBinding& shader, GLsizei /*instances*/) const {
+        drawVertices(shader);
     }
 
     // Default: nothing to set up for things that don't support instancing.

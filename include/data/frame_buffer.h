@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <glm/vec4.hpp>
 
-inline constexpr GLsizei DEFAULT_SAMPLES = 16;
+inline constexpr GLsizei DEFAULT_SAMPLES = 4;
 
 // Multisampled offscreen render target: a colour texture plus a depth/stencil
 // renderbuffer. Fully set up (or throws) on construction.

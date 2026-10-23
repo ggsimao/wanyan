@@ -12,6 +12,7 @@ public:
 
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const override;
     void drawPlain(const ShaderProgramBinding& shader) const override;
+    void drawVertices(const ShaderProgramBinding& shader) const override;
 
 private:
     MeshBuffers _buffers;

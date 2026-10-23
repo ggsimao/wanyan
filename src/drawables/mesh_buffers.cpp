@@ -4,7 +4,7 @@
 
 MeshBuffers::MeshBuffers(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices,
                          std::initializer_list<VertexAttribute> attributes)
-    : _indexCount(static_cast<GLsizei>(indices.size())) {
+    : _indexCount(static_cast<GLsizei>(indices.size())), _vertexCount(static_cast<GLsizei>(vertices.size())) {
     VertexArrayBinding vao(_vao);
     {
         auto abo = vao.bindABO(_abo);
@@ -22,9 +22,19 @@ void MeshBuffers::draw() const {
     vao.drawElements(_indexCount);
 }
 
+void MeshBuffers::drawVertices() const {
+    VertexArrayBinding vao(_vao);
+    vao.drawVertices(_vertexCount, GL_POINTS);
+}
+
 void MeshBuffers::drawInstanced(GLsizei instances) const {
     VertexArrayBinding vao(_vao);
     vao.drawElementsInstanced(_indexCount, instances);
+}
+
+void MeshBuffers::drawVerticesInstanced(GLsizei instances) const {
+    VertexArrayBinding vao(_vao);
+    vao.drawVerticesInstanced(_vertexCount, GL_POINTS, instances);
 }
 
 void MeshBuffers::setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const {

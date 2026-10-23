@@ -1,13 +1,15 @@
 #include "data/uniform_buffer.h"
+#include <glm/fwd.hpp>
 
 namespace {
     constexpr GLsizeiptr MAT4_SIZE = sizeof(glm::mat4);  // 64 bytes, also the std140 stride
 
     constexpr GLintptr MODEL_OFFSET = 0 * MAT4_SIZE;
-    constexpr GLintptr VIEW_OFFSET = 1 * MAT4_SIZE;
-    constexpr GLintptr PROJECTION_OFFSET = 2 * MAT4_SIZE;
-    constexpr GLintptr NORMAL_OFFSET = 3 * MAT4_SIZE;
-    constexpr GLsizeiptr MATRICES_SIZE = 4 * MAT4_SIZE;
+    constexpr GLintptr PROJ_VIEW_OFFSET = 1 * MAT4_SIZE;
+    // constexpr GLintptr VIEW_OFFSET = 1 * MAT4_SIZE;
+    // constexpr GLintptr PROJECTION_OFFSET = 2 * MAT4_SIZE;
+    constexpr GLintptr NORMAL_OFFSET = 2 * MAT4_SIZE;
+    constexpr GLsizeiptr MATRICES_SIZE = 3 * MAT4_SIZE;
 
     static_assert(sizeof(glm::mat4) == 16 * sizeof(float),
                 "glm::mat4 must be tightly packed to match std140");
@@ -37,12 +39,8 @@ void UniformBuffer::setModelMat(const glm::mat4& model) {
     setMat(MODEL_OFFSET, model);
 }
 
-void UniformBuffer::setViewMat(const glm::mat4& view) {
-    setMat(VIEW_OFFSET, view);
-}
-
-void UniformBuffer::setProjectionMat(const glm::mat4& projection) {
-    setMat(PROJECTION_OFFSET, projection);
+void UniformBuffer::setProjViewMat(const glm::mat4& proj_view) {
+    setMat(PROJ_VIEW_OFFSET, proj_view);
 }
 
 void UniformBuffer::setNormalMat(const glm::mat4& normal) {

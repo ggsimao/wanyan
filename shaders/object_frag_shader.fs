@@ -59,8 +59,7 @@ struct Spotlight {
 
 layout(std140, binding = 0) uniform Matrices {
     mat4 modelMat;
-    mat4 viewMat;
-    mat4 projMat;
+    mat4 projViewMat;
     mat4 normalMat;
 };
 

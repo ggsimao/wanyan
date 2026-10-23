@@ -35,6 +35,10 @@ void BasicMesh::drawPlain(const ShaderProgramBinding& /*shader*/) const {
     _buffers.draw();
 }
 
+void BasicMesh::drawVertices(const ShaderProgramBinding& /*shader*/) const {
+    _buffers.drawVertices();
+}
+
 void BasicMesh::drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
                               GLsizei instances) const {
     MaterialDrawBinding material(units, _material);
@@ -44,6 +48,10 @@ void BasicMesh::drawInstanced(const ShaderProgramBinding& shader, TextureUnits& 
 
 void BasicMesh::drawPlainInstanced(const ShaderProgramBinding& /*shader*/, GLsizei instances) const {
     _buffers.drawInstanced(instances);
+}
+
+void BasicMesh::drawVerticesInstanced(const ShaderProgramBinding& /*shader*/, GLsizei instances) const {
+    _buffers.drawVerticesInstanced(instances);
 }
 
 void BasicMesh::setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const {
