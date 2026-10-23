@@ -31,6 +31,7 @@ namespace {
     // Shaders
     constexpr const char* REGULAR_VERT_SHADER = "shaders/regular_vert_shader.vs";
     constexpr const char* OBJECT_FRAG_SHADER = "shaders/object_frag_shader.fs";
+    constexpr const char* DEBUG_VERT_SHADER = "shaders/debug_vert_shader.vs";
     constexpr const char* DEBUG_GEO_SHADER = "shaders/debug_geo_shader.gs";
     constexpr const char* DEBUG_FRAG_SHADER = "shaders/debug_frag_shader.fs";
     constexpr const char* BUFFER_FRAG_SHADER = "shaders/buffer_frag_shader.fs";
@@ -172,7 +173,7 @@ SceneShaders DemoShaders::forRenderer() const {
 DemoShaders loadDemoShaders() {
     return {
         ShaderProgram::fromFiles("Object", asset(REGULAR_VERT_SHADER), asset(OBJECT_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Debug", asset(REGULAR_VERT_SHADER), asset(DEBUG_GEO_SHADER),
+        ShaderProgram::fromFiles("Debug", asset(DEBUG_VERT_SHADER), asset(DEBUG_GEO_SHADER),
                                  asset(DEBUG_FRAG_SHADER)),
         ShaderProgram::fromFiles("Buffer", asset(REGULAR_VERT_SHADER), asset(BUFFER_FRAG_SHADER)),
         ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
