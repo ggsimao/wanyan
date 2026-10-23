@@ -70,8 +70,9 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
     const auto render = [&](const ShadowFrameBuffer& shadowMap, const LightSpace& space) {
         ShadowDrawBinding target(shadowMap);  // also sets the viewport to the map's size
         target.clearDepth();
-        _ubo.setProjectionMat(space.projection);
-        _ubo.setViewMat(space.view);
+        _ubo.setProjViewMat(space.projection * space.view);
+        // _ubo.setProjectionMat(space.projection);
+        // _ubo.setViewMat(space.view);
         drawShadowCasters(scene, shader);
     };
     render(scene.lighting.directional.shadowMap, directionalLightSpace(scene.lighting.directional));
@@ -102,13 +103,15 @@ void SceneRenderer::compose(const Scene& scene, const Camera& camera) const {
     render_state::BlendFunc alphaBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     TextureUnits units;
-    _ubo.setProjectionMat(glm::perspective(camera.fov(), ASPECT_RATIO, NEAR_PLANE, FAR_PLANE));
+    glm::mat4 proj = glm::perspective(camera.fov(), ASPECT_RATIO, NEAR_PLANE, FAR_PLANE);
 
+    glm::mat4 cam_lookat = camera.lookAt();
     // The skybox follows the camera's rotation but not its position.
-    _ubo.setViewMat(glm::mat4(glm::mat3(camera.lookAt())));
+    glm::mat4 skybox_view = glm::mat4(glm::mat3(cam_lookat));
+    _ubo.setProjViewMat(proj * skybox_view);
     drawSkyboxes(scene, units);
 
-    _ubo.setViewMat(camera.lookAt());
+    _ubo.setProjViewMat(proj * cam_lookat);
     drawObjects(scene, camera, units);
 }
 
@@ -163,7 +166,7 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
         if (_options.visualizeNormals) {
             ShaderProgramBinding debug(_shaders.debug);
-            object->drawPlain(debug);
+            object->drawVertices(debug);
         }  // the object program is back in use here
 
         if (object->hasOutline()) {

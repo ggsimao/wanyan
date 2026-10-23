@@ -29,3 +29,7 @@ void Canvas::draw(const ShaderProgramBinding& shader, TextureUnits& units) const
 void Canvas::drawPlain(const ShaderProgramBinding& /*shader*/) const {
     _buffers.draw();
 }
+
+void Canvas::drawVertices(const ShaderProgramBinding& /*shader*/) const {
+    _buffers.drawVertices();
+}

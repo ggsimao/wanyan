@@ -4,10 +4,10 @@ layout(location = 3) in mat4 aInstModel;
 
 layout(std140, binding = 0) uniform Matrices {
     mat4 modelMat;
-    mat4 viewMat;
-    mat4 projMat;
+    mat4 projViewMat;
+    mat4 normalMat;
 };
 
 void main() {
-    gl_Position = projMat * viewMat * modelMat * aInstModel * vec4(aPos, 1.0);
+    gl_Position = projViewMat * (modelMat * (aInstModel * vec4(aPos, 1.0)));
 }

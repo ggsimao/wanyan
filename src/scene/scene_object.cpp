@@ -97,6 +97,13 @@ void SceneObject::drawPlain(const ShaderProgramBinding& shader) const {
     _drawable->drawPlainInstanced(shader, static_cast<GLsizei>(_instances.size()));
 }
 
+void SceneObject::drawVertices(const ShaderProgramBinding& shader) const {
+    if (_instancesDirty) {
+        uploadInstances();
+    }
+    _drawable->drawVerticesInstanced(shader, static_cast<GLsizei>(_instances.size()));
+}
+
 void SceneObject::drawOutline(const ShaderProgramBinding& shader, TextureUnits& units) const {
     // Only where the object itself didn't write to the stencil buffer, on top
     // of everything else. Each guard restores whatever was set before.

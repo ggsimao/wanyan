@@ -43,6 +43,16 @@ void VertexArray::clearBinding() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void VertexArrayBinding::drawVertices(GLsizei count, GLenum mode) const {
+    assertActive();
+    glDrawArrays(mode, 0, count);
+}
+
+void VertexArrayBinding::drawVerticesInstanced(GLsizei count, GLenum mode, GLsizei instances) const {
+    assertActive();
+    glDrawArraysInstanced(mode, 0, count, instances);
+}
+
 void VertexArrayBinding::drawElements(GLsizei count, GLenum mode) const {
     assertActive();
     glDrawElements(mode, count, GL_UNSIGNED_INT, nullptr);

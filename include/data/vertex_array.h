@@ -65,6 +65,8 @@ public:
         explicit ElementArrayBufferBinding(const ElementArrayBuffer& ebo) : ScopedBinding(ebo) {}
     };
 
+    void drawVertices(GLsizei count, GLenum mode) const;
+    void drawVerticesInstanced(GLsizei count, GLenum mode, GLsizei instances) const;
     void drawElements(GLsizei count, GLenum mode = GL_TRIANGLES) const;
     void drawElementsInstanced(GLsizei count, GLsizei instances, GLenum mode = GL_TRIANGLES) const;
 

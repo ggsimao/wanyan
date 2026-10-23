@@ -25,7 +25,9 @@ public:
                 std::initializer_list<VertexAttribute> attributes);
 
     void draw() const;
+    void drawVertices() const;
     void drawInstanced(GLsizei instances) const;
+    void drawVerticesInstanced(GLsizei instances) const;
 
     // Reads per-instance model and normal matrices (see Instance) from the
     // given buffer, at attribute locations 3-9.
@@ -37,5 +39,5 @@ private:
     VertexArray _vao;
     ArrayBuffer _abo;
     ElementArrayBuffer _ebo;
-    GLsizei _indexCount;
+    GLsizei _indexCount, _vertexCount;
 };

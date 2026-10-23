@@ -29,6 +29,10 @@ void Skybox::drawPlain(const ShaderProgramBinding& /*shader*/) const {
     _buffers.draw();
 }
 
+void Skybox::drawVertices(const ShaderProgramBinding& /*shader*/) const {
+    _buffers.drawVertices();
+}
+
 const CubeMap& Skybox::texture() const {
     return _texture;
 }
