@@ -86,7 +86,7 @@ namespace debug {
     } // namespace
 
     void enableGlDebugOutput() {
-        if (!DEBUG_ON)
+        if (!GL_DEBUG_ENABLED)
             return;
         GLint flags = 0;
         glGetIntegerv(GL_CONTEXT_FLAGS, &flags);

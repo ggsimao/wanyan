@@ -8,6 +8,7 @@
 #include "render_state/culling.h"
 #include "render_state/depth.h"
 #include "render_state/stencil.h"
+#include "scene/scene_object.h"
 #include "shaders/shader_program.h"
 #include "textures/draw_binding.h"
 
@@ -97,10 +98,9 @@ void SceneRenderer::compose(const Scene& scene, const Camera& camera) const {
     render_state::StencilFunc stencilAlways(GL_ALWAYS, 1, 0xFF);
     render_state::StencilOp stencilReplace(GL_KEEP, GL_KEEP, GL_REPLACE);  // objects mark the stencil
     render_state::StencilMask stencilWrites(0xFF);
-    // Blending for everything, as Rust set it up globally: only the window has
-    // alpha below 1, and opaque fragments blend to themselves.
-    render_state::Capability blending(GL_BLEND, true);
-    render_state::BlendFunc alphaBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    render_state::DepthMask depthMaskOn(true);
+    // Blending off as baseline, most objects are opaque.
+    render_state::Capability blending(GL_BLEND, false);
 
     TextureUnits units;
     glm::mat4 proj = glm::perspective(camera.fov(), ASPECT_RATIO, NEAR_PLANE, FAR_PLANE);
@@ -130,20 +130,27 @@ void SceneRenderer::drawSkyboxes(const Scene& scene, TextureUnits& units) const 
 
 void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
                                 TextureUnits& units) const {
-    // Back to front, so transparent objects blend over what's behind them.
-    // Sorts pointers, not the objects: their order is main's (it finds the
-    // rocks by index), and the mirror draws the same objects.
+    // Opaque objects first, then transparent ones, blended over the finished
+    // scene behind them. Both lists are drawn back to front: transparent ones
+    // so they blend in the right order, opaque ones so a nearer object can
+    // still cover an outline drawn before it. Sorts pointers, not the objects:
+    // their order is main's (it finds the rocks by index), and the mirror
+    // draws the same objects.
     const glm::vec3 eye = camera.pos();
     const auto distance = [&](const SceneObject* object) {
         return glm::length(eye - glm::vec3(object->model()[3]));
     };
-    std::vector<const SceneObject*> drawOrder;
-    drawOrder.reserve(scene.objects.size());
+    const auto backToFront = [&](const SceneObject* a, const SceneObject* b) {
+        return distance(a) > distance(b);
+    };
+
+    std::vector<const SceneObject*> opaque;
+    std::vector<const SceneObject*> transparent;
     for (const SceneObject& object : scene.objects) {
-        drawOrder.push_back(&object);
+        (object.isTransparent() ? transparent : opaque).push_back(&object);
     }
-    std::sort(drawOrder.begin(), drawOrder.end(),
-              [&](const SceneObject* a, const SceneObject* b) { return distance(a) > distance(b); });
+    std::sort(opaque.begin(), opaque.end(), backToFront);
+    std::sort(transparent.begin(), transparent.end(), backToFront);
 
     ShaderProgramBinding shader(_shaders.object);
     setLightingUniforms(shader, scene.lighting);
@@ -159,7 +166,7 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
     shader.setMat4("dirLightSpaceMatrix", directionalLightSpace(lighting.directional).matrix());
     shader.setMat4("spotlightSpaceMatrix", spotlightSpace(lighting.spotlight).matrix());
 
-    for (const SceneObject* object : drawOrder) {
+    const auto drawObject = [&](const SceneObject* object) {
         _ubo.setModelMat(object->model());
         _ubo.setNormalMat(object->normalMatrix());
         object->draw(shader, units);
@@ -174,6 +181,18 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
             _ubo.setModelMat(glm::scale(object->model(), glm::vec3(OUTLINE_SCALE)));
             object->drawOutline(outline, units);
         }
+    };
+
+    for (const SceneObject* object : opaque) {
+        drawObject(object);
+    }
+
+    render_state::Capability blending(GL_BLEND, true);
+    render_state::BlendFunc alphaBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    render_state::DepthMask depthMaskOff(false);
+
+    for (const SceneObject* object : transparent) {
+        drawObject(object);
     }
 }
 
