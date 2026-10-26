@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include <format>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -24,8 +25,8 @@ namespace {
             const aiScene* scene =
                 importer.ReadFile(_path.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
             if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode) {
-                throw std::runtime_error("Couldn't load model " + _path.string() + ": " +
-                                        importer.GetErrorString());
+                throw std::runtime_error(std::format("Couldn't load model {}: {}", _path.string(),
+                                        importer.GetErrorString()));
             }
             processNode(*scene->mRootNode, *scene);
             return std::move(_meshes);
@@ -106,7 +107,7 @@ namespace {
         // Fixes the Rust version, which skipped already-loaded textures and left
         // the second mesh using them without any.
         TexturePtr texture(const std::filesystem::path& path, TextureType type) {
-            const std::string key = std::to_string(static_cast<int>(type)) + ':' + path.string();
+            const std::string key = std::format("{}:{}", static_cast<int>(type), path.string());
             if (auto it = _textures.find(key); it != _textures.end()) {
                 return it->second;
             }

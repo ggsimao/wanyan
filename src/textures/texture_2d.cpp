@@ -1,5 +1,6 @@
 #include "textures/texture_2d.h"
 
+#include <format>
 #include <stb/stb_image.h>
 
 #include <memory>
@@ -59,7 +60,7 @@ void Texture2D::load(const std::filesystem::path& path) {
     stbi_set_flip_vertically_on_load(1);
     StbiPixels data(stbi_load(path.string().c_str(), &width, &height, &channels, 0));
     if (!data) {
-        throw std::runtime_error("Couldn't load texture: " + path.string());
+        throw std::runtime_error(std::format("Couldn't load texture: {}", path.string()));
     }
 
     const GLenum format = channels == 4 ? GL_RGBA : GL_RGB;

@@ -81,19 +81,19 @@ namespace {
         const glm::vec3 ambient(0.2f);
         const glm::vec3 diffuse(1.0f);
         const glm::vec3 specular(1.0f);
-        const Attenuation attenuation{1.0f, 0.5f, 0.25f};
+        const Attenuation attenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
 
         glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
-        DirectionalLight sun(glm::normalize(sun_dir), {ambient / 4.0f, diffuse, specular});
+        DirectionalLight sun(glm::normalize(sun_dir), {.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular});
 
         std::vector<PointLight> lamps;
         for (const glm::vec3& position : {glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(-1.0f, -2.0f, -1.0f),
                                           glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, -2.5f)}) {
-            lamps.emplace_back(position, LightColors{ambient / 4.0f, diffuse, specular}, attenuation);
+            lamps.emplace_back(position, LightColors{.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular}, attenuation);
         }
 
         Spotlight flashlight(camera.pos(), camera.dir(),
-                             {ambient / 4.0f, diffuse / 2.0f, specular / 2.0f},
+                             {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f},
                              glm::radians(15.0f), glm::radians(20.0f));
 
         return Lighting{std::move(sun), std::move(lamps), std::move(flashlight)};

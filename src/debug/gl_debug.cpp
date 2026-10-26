@@ -53,7 +53,7 @@ namespace debug {
                 const std::string prefix = "TracerPid:";
                 std::string line;
                 while (std::getline(status, line)) {
-                    if (line.compare(0, prefix.size(), prefix) == 0) {
+                    if (line.starts_with(prefix)) {
                         return std::stoi(line.substr(prefix.size())) != 0;
                     }
                 }

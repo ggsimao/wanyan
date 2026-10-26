@@ -11,7 +11,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -27,7 +26,7 @@ class SceneObject : public Spatial<SceneObject> {
 public:
     // Only takes part in overload resolution for Drawable types, so it can't
     // capture SceneObject's own moves or the private constructor's unique_ptr.
-    template <typename T, typename = std::enable_if_t<std::is_base_of_v<Drawable, T>>>
+    template <std::derived_from<Drawable> T>
     explicit SceneObject(T drawable)
         : SceneObject(std::make_unique<T>(std::move(drawable))) {}
 

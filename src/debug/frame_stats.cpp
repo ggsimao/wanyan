@@ -45,11 +45,11 @@ void debug::FrameStats::endFrame(bool report) {
     if (report) {
         const auto frames = static_cast<double>(_frames);
         for (std::size_t i = 0; i < SECTION_COUNT; ++i) {
-            std::cout << SECTION_NAMES[i] << ": CPU " << milliseconds(_cpuTotals[i]) / frames << " ms, ";
+            std::cout << SECTION_NAMES[i] << ": CPU " << std::format("{:.2f}", milliseconds(_cpuTotals[i]) / frames) << " ms, ";
             if (_samples[i] == 0)
                 std::cout << "GPU no data\n";
             else
-                std::cout << "GPU " << milliseconds(_gpuTotals[i]) / _samples[i] << " ms\n";
+                std::cout << "GPU " << std::format("{:.2f}", milliseconds(_gpuTotals[i]) / _samples[i]) << " ms\n";
         }
         std::cout << "FPS: " << frames / (milliseconds(elapsed) / 1000.0) << '\n'
                   << "----------------------------------------\n";

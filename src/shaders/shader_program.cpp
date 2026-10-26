@@ -4,6 +4,7 @@
 
 #include <cmath>
 
+#include <format>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
@@ -23,7 +24,7 @@ ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
 void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
     _id = glCreateProgram();
     if (_id == 0) {
-        throw std::runtime_error("Couldn't make shader program \"" + _label + "\"");
+        throw std::runtime_error(std::format("Couldn't make shader program \"{}\"", _label));
     }
 
     for (GLuint shader : shaders) {
@@ -42,7 +43,7 @@ void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
         // Called from a constructor, which won't run the destructor on throw.
         const std::string log = infoLog();
         release();
-        throw std::runtime_error("Program \"" + _label + "\" link error: " + log);
+        throw std::runtime_error(std::format("Program \"{}\" link error: {}", _label, log));
     }
 
     // Names the program in GL's own debug messages and in graphics debuggers.
@@ -160,10 +161,10 @@ void ShaderProgramBinding::setMaterial(const std::string& name,
     const std::size_t specularCount = m.specularMaps().size();
 
     for (std::size_t i = 0; i < diffuseCount; ++i) {
-        setInt(name + ".diffuseTextures[" + std::to_string(i) + "]", material.diffuseUnit(i));
+        setInt(std::format("{}.diffuseTextures[{}]", name, i), material.diffuseUnit(i));
     }
     for (std::size_t i = 0; i < specularCount; ++i) {
-        setInt(name + ".specularTextures[" + std::to_string(i) + "]", material.specularUnit(i));
+        setInt(std::format("{}.specularTextures[{}]", name, i), material.specularUnit(i));
     }
     setFloat(name + ".shininess", m.shininess());
     // Material guarantees at least one map of each kind, so these are >= 1.

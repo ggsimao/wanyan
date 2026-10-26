@@ -16,6 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
+#include <format>
 #include <string>
 #include <vector>
 
@@ -51,7 +52,7 @@ namespace {
     void setLightingUniforms(const ShaderProgramBinding& shader, const Lighting& lighting) {
         shader.setDirectionalLight("dirLight", lighting.directional);
         for (std::size_t i = 0; i < lighting.points.size(); ++i) {
-            shader.setPointLight("pointLights[" + std::to_string(i) + "]", lighting.points[i]);
+            shader.setPointLight(std::format("pointLights[{}]", i), lighting.points[i]);
         }
         shader.setSpotlight("spotlight", lighting.spotlight);
     }
@@ -140,17 +141,14 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
     const auto distance = [&](const SceneObject* object) {
         return glm::length(eye - glm::vec3(object->model()[3]));
     };
-    const auto backToFront = [&](const SceneObject* a, const SceneObject* b) {
-        return distance(a) > distance(b);
-    };
 
     std::vector<const SceneObject*> opaque;
     std::vector<const SceneObject*> transparent;
     for (const SceneObject& object : scene.objects) {
         (object.isTransparent() ? transparent : opaque).push_back(&object);
     }
-    std::sort(opaque.begin(), opaque.end(), backToFront);
-    std::sort(transparent.begin(), transparent.end(), backToFront);
+    std::ranges::sort(opaque, std::greater{}, distance);
+    std::ranges::sort(transparent, std::greater{}, distance);
 
     ShaderProgramBinding shader(_shaders.object);
     setLightingUniforms(shader, scene.lighting);

@@ -44,6 +44,7 @@ int main() {
         // First, so it's destroyed last: every GL object below must be
         // deleted while its context still exists.
         Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
+        // Intentional startup self-check: confirms GL debug output reaches our callback
         glDebugMessageInsert(
             GL_DEBUG_SOURCE_APPLICATION,
             GL_DEBUG_TYPE_OTHER,
@@ -81,8 +82,9 @@ int main() {
             {
                 auto timer = stats.time(debug::FrameStats::UPDATE);
                 controls.update(frameMilliseconds,
-                                {program, camera, scene.lighting.spotlight, renderer.options(),
-                                 screen.parameters(), rockTransforms});
+                                {.program=program, .camera=camera, .flashlight=scene.lighting.spotlight,
+                                    .renderOptions=renderer.options(), .screen=screen.parameters(),
+                                    .rockTransforms=rockTransforms});
             }
 
             // The flashlight is held by the camera.

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <format>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -32,10 +33,10 @@ namespace {
         } else if (ext == ".tga") {
             ok = stbi_write_tga(file.c_str(), width, height, 3, pixels);
         } else {
-            throw std::runtime_error("Unsupported image format: " + ext);
+            throw std::runtime_error(std::format("Unsupported image format: {}", ext));
         }
         if (!ok) {
-            throw std::runtime_error("Failed to save image: " + file);
+            throw std::runtime_error(std::format("Failed to save image: {}", file));
         }
     }
 }  // namespace
@@ -67,8 +68,8 @@ FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
         // A throwing constructor never runs the destructor, so free the FBO here.
         // _texture and _rbo are fully constructed and clean up after themselves.
         release();
-        throw std::runtime_error("Could not complete framebuffer (status " +
-                                 std::to_string(status) + ")");
+        throw std::runtime_error(std::format("Could not complete framebuffer (status {})",
+                                 status));
     }
 }
 
