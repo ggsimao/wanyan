@@ -37,11 +37,11 @@ add_executable(wanyan ${WANYAN_SOURCES})
 target_include_directories(wanyan PRIVATE ${WANYAN_INCLUDE_DIR})
 target_link_libraries(wanyan PRIVATE stb SDL2::SDL2 OpenGL::GL GLEW::GLEW assimp::assimp)
 
-# Standard C++17, not GCC's gnu++17 dialect. Spelled out as properties:
-# with only cxx_std_17, CMake passes no flag when the compiler's default
+# Standard C++20, not GCC's gnu++20 dialect. Spelled out as properties:
+# with only cxx_std_20, CMake passes no flag when the compiler's default
 # already satisfies it, and the extensions stay on.
 set_target_properties(wanyan stb PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
 )

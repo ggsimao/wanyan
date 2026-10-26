@@ -4,7 +4,6 @@
 
 #include <GL/glew.h>
 
-#include <iostream>  // the debug callback
 #include <stdexcept>
 #include <string>
 
@@ -26,7 +25,7 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);  // the shaders use GLSL 4.30
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);  // outlines
-        if (debug::DEBUG_ON)
+        if (debug::GL_DEBUG_ENABLED)
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 
         _window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width,
@@ -53,6 +52,7 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
 
         SDL_GL_SetSwapInterval(1);            // vsync, as in Rust; failure isn't fatal
         SDL_SetRelativeMouseMode(SDL_TRUE);   // captures the mouse for the camera
+        debug::enableGlDebugOutput();
     } catch (...) {
         release();
         throw;

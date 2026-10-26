@@ -15,4 +15,14 @@ namespace render_state {
     private:
         GLint _previous = GL_LESS;
     };
+
+    class DepthMask {
+    public:
+        explicit DepthMask(bool writeDepth);
+        ~DepthMask();
+        DepthMask(const DepthMask&) = delete;
+        DepthMask& operator=(const DepthMask&) = delete;
+    private:
+        GLboolean _previous = GL_TRUE;
+    };
 }  // namespace render_state

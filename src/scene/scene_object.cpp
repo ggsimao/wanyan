@@ -79,6 +79,14 @@ bool SceneObject::hasOutline() const {
     return _outlined;
 }
 
+bool SceneObject::isTransparent() const {
+    return _transparent;
+}
+
+void SceneObject::setTransparent(bool transparent) {
+    _transparent = transparent;
+}
+
 const Drawable& SceneObject::drawable() const {
     return *_drawable;
 }

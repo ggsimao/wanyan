@@ -2,7 +2,6 @@
 #include "controls/controller_hub.h"
 #include "data/uniform_buffer.h"
 #include "debug/frame_stats.h"
-#include "debug/gl_debug.h"
 #include "platform.h"
 #include "program.h"
 #include "random_transform.h"
@@ -45,7 +44,6 @@ int main() {
         // First, so it's destroyed last: every GL object below must be
         // deleted while its context still exists.
         Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
-        debug::enableGlDebugOutput();
         glDebugMessageInsert(
             GL_DEBUG_SOURCE_APPLICATION,
             GL_DEBUG_TYPE_OTHER,

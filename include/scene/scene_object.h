@@ -47,6 +47,9 @@ public:
     void setOutlineColor(const glm::vec3& color);
     void enableOutline(bool enable);
     bool hasOutline() const;
+    bool isTransparent() const;
+
+    void setTransparent(bool transparent);
 
     const Drawable& drawable() const;
 
@@ -71,4 +74,5 @@ private:
     // Instances are uploaded lazily, on the first draw after a change. That's
     // a cache of state the object logically already has, so draw() stays const.
     mutable bool _instancesDirty = true;
+    bool _transparent = false;
 };

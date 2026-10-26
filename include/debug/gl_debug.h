@@ -4,9 +4,9 @@
 
 namespace debug {
 #ifndef NDEBUG
-    inline constexpr bool DEBUG_ON = true;
+    inline constexpr bool GL_DEBUG_ENABLED = true;
 #else
-    inline constexpr bool DEBUG_ON = false;
+    inline constexpr bool GL_DEBUG_ENABLED = false;
 #endif
     void enableGlDebugOutput();
 }

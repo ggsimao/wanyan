@@ -127,6 +127,7 @@ namespace {
                           {texture(TextureType::SPECULAR, WINDOW_SPECULAR, GL_CLAMP_TO_EDGE)},
                           8.0f);
         SceneObject window(BasicMesh::square(1.0f, std::move(material)));
+        window.setTransparent(true);
         window.translate({0.0f, 1.5f, -1.5f});
         return window;
     }
