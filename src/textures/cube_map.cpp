@@ -1,5 +1,6 @@
 #include "textures/cube_map.h"
 
+#include <format>
 #include <stb/stb_image.h>
 
 #include <cassert>
@@ -62,7 +63,7 @@ void CubeMap::load(const CubeMapPaths& paths) {
         int width = 0, height = 0, channels = 0;
         StbiPixels data(stbi_load(paths[face].string().c_str(), &width, &height, &channels, 0));
         if (!data) {
-            throw std::runtime_error("Couldn't load cube map face: " + paths[face].string());
+            throw std::runtime_error(std::format("Couldn't load cube map face: {}", paths[face].string()));
         }
         const GLenum format = channels == 4 ? GL_RGBA : GL_RGB;
         // Skybox images are colour data authored in sRGB.

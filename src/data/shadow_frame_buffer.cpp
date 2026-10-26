@@ -1,5 +1,6 @@
 #include "data/shadow_frame_buffer.h"
 
+#include <format>
 #include <glm/vec4.hpp>
 
 #include <stdexcept>
@@ -28,8 +29,8 @@ ShadowFrameBuffer::ShadowFrameBuffer(GLsizei width, GLsizei height)
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         release();
-        throw std::runtime_error("Could not complete shadow framebuffer (status " +
-                                 std::to_string(status) + ")");
+        throw std::runtime_error(std::format("Could not complete shadow framebuffer (status {})",
+                                 status));
     }
 }
 

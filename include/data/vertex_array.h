@@ -30,12 +30,11 @@ public:
     public:
         void bufferData(const void* data, size_t size, GLenum usage);
 
-        template <typename Container>
-        void bufferData(const Container& data, GLenum usage) {
-            assertActive();
-            using T = std::remove_cv_t<std::remove_reference_t<decltype(*std::data(data))>>;
-            static_assert(std::is_trivially_copyable_v<T>,  "bufferData: element type must be trivially copyable (plain data, no owning members)");
-            bufferData(std::data(data), std::size(data) * sizeof(T), usage);
+        template <std::ranges::contiguous_range R>
+            requires std::is_trivially_copyable_v<std::ranges::range_value_t<R>>
+        void bufferData(const R& data, GLenum usage) {
+            using T = std::ranges::range_value_t<R>;
+            bufferData(std::ranges::data(data), std::ranges::size(data) * sizeof(T), usage);
         }
 
         void attribPointer(GLuint index, GLint components, GLenum type, GLsizei stride,
@@ -51,12 +50,11 @@ public:
     public:
         void bufferData(const void* data, size_t size, GLenum usage);
 
-        template <typename Container>
-        void bufferData(const Container& data, GLenum usage) {
-            assertActive();
-            using T = std::remove_cv_t<std::remove_reference_t<decltype(*std::data(data))>>;
-            static_assert(std::is_trivially_copyable_v<T>,  "bufferData: element type must be trivially copyable (plain data, no owning members)");
-            bufferData(std::data(data), std::size(data) * sizeof(T), usage);
+        template <std::ranges::contiguous_range R>
+            requires std::is_trivially_copyable_v<std::ranges::range_value_t<R>>
+        void bufferData(const R& data, GLenum usage) {
+            using T = std::ranges::range_value_t<R>;
+            bufferData(std::ranges::data(data), std::ranges::size(data) * sizeof(T), usage);
         }
 
 

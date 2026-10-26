@@ -6,6 +6,23 @@
 template <typename T>
 inline constexpr bool restoreBindingOnExit = true;
 
+// Binds an object for the duration of a scope, and restores whatever was bound
+// before when the scope ends.
+//
+// T must provide a `bind() const` member and a static `clearBinding()`,
+// unless Bind and Clear are given explicitly (as FrameBuffer does, with one
+// pair of functions for each of its two binding targets). Each combination of
+// T, Bind and Clear is tracked separately.
+//
+// - The bound object must outlive the binding: the binding keeps a pointer to
+//   it, and binds it again when an inner binding ends. Constructing from
+//   nullptr binds the default object instead (e.g. the window's framebuffer).
+// - Bindings of the same kind may nest; ending one restores the one before it.
+//   Using an outer binding while an inner one is active trips an assert,
+//   since its object is no longer the bound one.
+// - A type opts out of restoring on exit by specializing restoreBindingOnExit
+//   to false. The element array buffer does: its binding is part of the VAO's
+//   state, so undoing it would detach the VAO's index buffer.
 template <typename T,
           void (T::*Bind)() const = &T::bind,
           void (*Clear)() = &T::clearBinding>

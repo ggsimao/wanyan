@@ -4,12 +4,13 @@
 
 #include <GL/glew.h>
 
+#include <format>
 #include <stdexcept>
 #include <string>
 
 namespace {
     std::runtime_error sdlError(const std::string& what) {
-        return std::runtime_error(what + ": " + SDL_GetError());
+        return std::runtime_error(std::format("{}: {}", what, SDL_GetError()));
     }
 }  // namespace
 
@@ -42,8 +43,8 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
         glewExperimental = GL_TRUE;  // needed for core profiles
         const GLenum glewStatus = glewInit();
         if (glewStatus != GLEW_OK) {
-            throw std::runtime_error(std::string("Couldn't initialize GLEW: ") +
-                                     reinterpret_cast<const char*>(glewGetErrorString(glewStatus)));
+            throw std::runtime_error(std::format("Couldn't initialize GLEW: {}",
+                reinterpret_cast<const char*>(glewGetErrorString(glewStatus))));
         }
         // glewInit queries extensions the old way, which a core profile
         // rejects with a harmless GL_INVALID_ENUM. Clear it so it isn't

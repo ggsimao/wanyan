@@ -3,6 +3,7 @@
 #include "utils.h"
 
 #include <cstddef>
+#include <format>
 #include <stdexcept>
 #include <utility>
 
@@ -35,7 +36,7 @@ Shader<Type>::Shader(const std::string& source) {
         // A throwing constructor never runs the destructor: free it here.
         const std::string log = infoLog();
         release();
-        throw std::runtime_error(std::string(stageName(Type)) + " compile error: " + log);
+        throw std::runtime_error(std::format("{} compile error: {}", std::string(stageName(Type)), log));
     }
 }
 
@@ -44,7 +45,7 @@ Shader<Type> Shader<Type>::fromFile(const std::filesystem::path& path) {
     try {
         return Shader(readFile(path));
     } catch (const std::runtime_error& error) {
-        throw std::runtime_error(path.string() + ": " + error.what());
+        throw std::runtime_error(std::format("{}: {}", path.string(), error.what()));
     }
 }
 
