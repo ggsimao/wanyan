@@ -102,8 +102,12 @@ int main() {
             }
 
             {
-                auto timer = stats.time(debug::FrameStats::DRAW);
+                auto timer = stats.time(debug::FrameStats::SHADOWS);
                 renderer.renderShadowMaps(scene);  // once: shadows don't depend on the camera
+            }
+
+            {
+                auto timer = stats.time(debug::FrameStats::DRAW);
                 screen.drawOnFramebuffer(renderer, scene, camera);
                 mirror.drawOnFramebuffer(renderer, scene, camera.invert());
                 mirror.drawOnAnother(screen, INSET_SCALE, INSET_OFFSET);

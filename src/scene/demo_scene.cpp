@@ -4,6 +4,8 @@
 #include "drawables/basic_mesh.h"
 #include "drawables/model.h"
 #include "drawables/skybox.h"
+#include "lighting.h"
+#include "shaders/shader_program.h"
 #include "textures/cube_map.h"
 #include "textures/material.h"
 #include "textures/texture_2d.h"
@@ -28,6 +30,8 @@ namespace {
         return std::filesystem::path(WANYAN_ROOT) / relative;
     }
 
+    constexpr size_t LAMPS_INDEX = 3;
+
     // Shaders
     constexpr const char* REGULAR_VERT_SHADER = "shaders/regular_vert_shader.vs";
     constexpr const char* OBJECT_FRAG_SHADER = "shaders/object_frag_shader.fs";
@@ -41,6 +45,9 @@ namespace {
     constexpr const char* SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
     constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
     constexpr const char* SHADOW_FRAG_SHADER = "shaders/shadow_frag_shader.fs";
+    constexpr const char* POINTSHADOW_VERT_SHADER = "shaders/pointshadow_vert_shader.vs";
+    constexpr const char* POINTSHADOW_GEO_SHADER = "shaders/pointshadow_geo_shader.gs";
+    constexpr const char* POINTSHADOW_FRAG_SHADER = "shaders/pointshadow_frag_shader.fs";
 
     // Textures and models
     constexpr const char* CONTAINER_TEXTURE = "resources/textures/container2.png";
@@ -53,9 +60,6 @@ namespace {
 
     // Not used yet; kept for later. Commented out because unused constants
     // are a warning, and -Werror makes that an error.
-    // constexpr const char* POINTSHADOW_VERT_SHADER = "shaders/pointshadow_vert_shader.vs";
-    // constexpr const char* POINTSHADOW_GEO_SHADER = "shaders/pointshadow_geo_shader.gs";
-    // constexpr const char* POINTSHADOW_FRAG_SHADER = "shaders/pointshadow_frag_shader.fs";
     // constexpr const char* WALL_TEXTURE = "resources/textures/wall.jpg";
     // constexpr const char* FACE_TEXTURE = "resources/textures/awesomeface.png";
     // constexpr const char* GRASS_TEXTURE = "resources/textures/grass.png";
@@ -84,17 +88,33 @@ namespace {
         const Attenuation attenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
 
         glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
-        DirectionalLight sun(glm::normalize(sun_dir), {.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular});
+        DirectionalLight sun(
+            glm::normalize(sun_dir),
+            {.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular}
+        );
 
         std::vector<PointLight> lamps;
+        size_t instanceIndex = 0;
         for (const glm::vec3& position : {glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(-1.0f, -2.0f, -1.0f),
                                           glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, -2.5f)}) {
-            lamps.emplace_back(position, LightColors{.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular}, attenuation);
+            lamps.emplace_back(
+                position,
+                LightColors{
+                    .ambient=ambient / 4.0f,
+                    .diffuse=diffuse,
+                    .specular=specular,
+                    .fixtureIndices=FixtureIndices{.objectID=LAMPS_INDEX, .instanceID=instanceIndex}
+                },
+                attenuation
+            );
+            instanceIndex++;
         }
 
-        Spotlight flashlight(camera.pos(), camera.dir(),
-                             {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f},
-                             glm::radians(15.0f), glm::radians(20.0f));
+        Spotlight flashlight(
+            camera.pos(), camera.dir(),
+            {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f},
+            glm::radians(15.0f), glm::radians(20.0f)
+        );
 
         return Lighting{std::move(sun), std::move(lamps), std::move(flashlight)};
     }
@@ -168,7 +188,7 @@ namespace {
 }  // namespace
 
 SceneShaders DemoShaders::forRenderer() const {
-    return {object, skybox, outline, shadow, debug};
+    return {object, skybox, outline, shadow, pointShadow, debug};
 }
 
 DemoShaders loadDemoShaders() {
@@ -180,6 +200,8 @@ DemoShaders loadDemoShaders() {
         ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
         ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER), asset(SKYBOX_FRAG_SHADER)),
         ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER), asset(SHADOW_FRAG_SHADER)),
+        ShaderProgram::fromFiles("PointShadow", asset(POINTSHADOW_VERT_SHADER), asset(POINTSHADOW_GEO_SHADER),
+                                 asset(POINTSHADOW_FRAG_SHADER)),
     };
 }
 

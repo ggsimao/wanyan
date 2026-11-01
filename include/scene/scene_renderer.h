@@ -14,6 +14,7 @@ struct SceneShaders {
     const ShaderProgram& skybox;
     const ShaderProgram& outline;
     const ShaderProgram& shadow;
+    const ShaderProgram& pointShadow;
     const ShaderProgram& debug;
 };
 
@@ -45,7 +46,11 @@ public:
 private:
     void drawSkyboxes(const Scene& scene, TextureUnits& units) const;
     void drawObjects(const Scene& scene, const Camera& camera, TextureUnits& units) const;
-    void drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader) const;
+    void drawShadowCasters(
+        const Scene& scene,
+        const ShaderProgramBinding& shader,
+        const std::optional<FixtureIndices>& fixtureIndices
+    ) const;
 
     SceneShaders _shaders;
     UniformBuffer& _ubo;

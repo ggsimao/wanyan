@@ -1,4 +1,5 @@
 #include "lighting.h"
+#include "data/point_shadow_frame_buffer.h"
 
 DirectionalLight::DirectionalLight(const glm::vec3& lightDirection, const LightColors& colors)
     : LightColors(colors),
@@ -7,7 +8,10 @@ DirectionalLight::DirectionalLight(const glm::vec3& lightDirection, const LightC
 
 PointLight::PointLight(const glm::vec3& lightPosition, const LightColors& colors,
                        const Attenuation& lightAttenuation)
-    : LightColors(colors), position(lightPosition), attenuation(lightAttenuation) {}
+    : LightColors(colors),
+      position(lightPosition),
+      attenuation(lightAttenuation),
+      shadowMap(SHADOW_RESOLUTION / 4, SHADOW_RESOLUTION / 4) {}
 
 Spotlight::Spotlight(const glm::vec3& lightPosition, const glm::vec3& lightDirection,
                      const LightColors& colors, float innerCutoffAngle, float outerCutoffAngle)

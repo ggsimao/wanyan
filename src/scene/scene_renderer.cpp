@@ -1,8 +1,10 @@
 #include "scene/scene_renderer.h"
 
 #include "camera.h"
+#include "data/point_shadow_frame_buffer.h"
 #include "data/shadow_frame_buffer.h"
 #include "data/uniform_buffer.h"
+#include "lighting.h"
 #include "render_state/blending.h"
 #include "render_state/capability.h"
 #include "render_state/culling.h"
@@ -10,13 +12,17 @@
 #include "render_state/stencil.h"
 #include "scene/scene_object.h"
 #include "shaders/shader_program.h"
+#include "textures/cube_map.h"
 #include "textures/draw_binding.h"
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <algorithm>
 #include <format>
+#include <optional>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -35,6 +41,12 @@ namespace {
         glm::mat4 matrix() const { return projection * view; }
     };
 
+    struct PointLightSpace {
+        glm::mat4 projection;
+        std::array<glm::mat4, 6> views;
+        glm::mat4 matrix(size_t index) const { return projection * views[index]; }
+    };
+
     LightSpace directionalLightSpace(const DirectionalLight& light) {
         // An orthographic box around the origin, looking along the light.
         const glm::vec3 position = -glm::normalize(light.direction) * SUN_DISTANCE;
@@ -47,6 +59,19 @@ namespace {
         // gamma.to_degrees() where radians were expected, and only the half-angle.
         return {glm::perspective(2.0f * spot.outerCutoff, 1.0f, NEAR_PLANE, FAR_PLANE),
                 glm::lookAt(spot.position, spot.position + spot.direction, WORLD_UP)};
+    }
+
+    PointLightSpace pointLightSpaces(const PointLight& light) {
+        std::array<glm::mat4, 6> views = {
+            glm::lookAt(light.position, light.position+glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position, light.position+glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position, light.position+glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)),
+            glm::lookAt(light.position, light.position+glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)),
+            glm::lookAt(light.position, light.position+glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position, light.position+glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)),
+        };
+        glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, NEAR_PLANE, FAR_PLANE);
+        return {shadowProj, views};
     }
 
     void setLightingUniforms(const ShaderProgramBinding& shader, const Lighting& lighting) {
@@ -65,27 +90,60 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
     render_state::Capability depthTest(GL_DEPTH_TEST, true);
     render_state::DepthFunc depthLess(GL_LESS);
     render_state::Capability culling(GL_CULL_FACE, true);
-    render_state::CullFace frontFaces(GL_FRONT);  // reduces shadow acne
+    render_state::CullFace backFaces(GL_BACK); // front-face culling detached shadows where objects cross the floor,
+                                                    // so back faces are culled and the bias handles acne.
 
     ShaderProgramBinding shader(_shaders.shadow);
 
-    const auto render = [&](const ShadowFrameBuffer& shadowMap, const LightSpace& space) {
+    const auto render = [&](
+        const ShadowFrameBuffer& shadowMap,
+        const LightSpace& space,
+        const std::optional<FixtureIndices> fixtureIndices
+    ) {
         ShadowDrawBinding target(shadowMap);  // also sets the viewport to the map's size
         target.clearDepth();
         _ubo.setProjViewMat(space.projection * space.view);
-        // _ubo.setProjectionMat(space.projection);
-        // _ubo.setViewMat(space.view);
-        drawShadowCasters(scene, shader);
+        drawShadowCasters(scene, shader, fixtureIndices);
     };
-    render(scene.lighting.directional.shadowMap, directionalLightSpace(scene.lighting.directional));
-    render(scene.lighting.spotlight.shadowMap, spotlightSpace(scene.lighting.spotlight));
+    render(
+        scene.lighting.directional.shadowMap,
+        directionalLightSpace(scene.lighting.directional),
+        scene.lighting.directional.fixtureIndices
+    );
+    render(
+        scene.lighting.spotlight.shadowMap,
+        spotlightSpace(scene.lighting.spotlight),
+        scene.lighting.spotlight.fixtureIndices
+    );
+
+    ShaderProgramBinding pointShader(_shaders.pointShadow);
+    for (const auto& lamp : scene.lighting.points) {
+        PointShadowDrawBinding pointTarget(lamp.shadowMap);
+        pointTarget.clearDepth();
+        PointLightSpace pointSpaces = pointLightSpaces(lamp);
+        for (size_t i = 0; i < 6; ++i)
+            pointShader.setMat4(std::format("shadowMatrices[{}]", i), pointSpaces.matrix(i));
+        pointShader.setVec3("lightPos", lamp.position);
+        pointShader.setFloat("farPlane", FAR_PLANE);
+        drawShadowCasters(scene, pointShader, lamp.fixtureIndices);
+    }
 }
 
-void SceneRenderer::drawShadowCasters(const Scene& scene, const ShaderProgramBinding& shader) const {
+void SceneRenderer::drawShadowCasters(
+    const Scene& scene,
+    const ShaderProgramBinding& shader,
+    const std::optional<FixtureIndices>& fixtureIndices
+) const {
+    size_t index = 0;
     for (const SceneObject& object : scene.objects) {
+        if (fixtureIndices && fixtureIndices->objectID == index) {
+            shader.setInt("excludedInstance", fixtureIndices->instanceID);
+        } else {
+            shader.setInt("excludedInstance", -1);
+        }
         _ubo.setModelMat(object.model());
-        _ubo.setNormalMat(object.normalMatrix());
         object.drawPlain(shader);
+        index++;
     }
 }
 
@@ -158,11 +216,21 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
     // material takes the units after them and gives them back when drawn.
     const Lighting& lighting = scene.lighting;
     TextureDrawBinding directionalShadow(units, lighting.directional.shadowMap.texture());
-    TextureDrawBinding spotlightShadow(units, lighting.spotlight.shadowMap.texture());
     shader.setTexture("dirLight.shadow_map", directionalShadow);
+    TextureDrawBinding spotlightShadow(units, lighting.spotlight.shadowMap.texture());
     shader.setTexture("spotlight.shadow_map", spotlightShadow);
+
+    const auto pointShadowMaps = lighting.points
+                                | std::views::transform(&PointLight::shadowMap)
+                                | std::views::transform(&PointShadowFrameBuffer::texture);
+    TextureDrawBinding<CubeMap> pointShadows(units, pointShadowMaps);
+    for (std::size_t i = 0; i < static_cast<std::size_t>(pointShadows.size()); ++i) {
+        shader.setTexture(std::format("pointLights[{}].shadow_map", i), pointShadows, i);
+    }
+
     shader.setMat4("dirLightSpaceMatrix", directionalLightSpace(lighting.directional).matrix());
     shader.setMat4("spotlightSpaceMatrix", spotlightSpace(lighting.spotlight).matrix());
+    shader.setFloat("pointShadowFarPlane", FAR_PLANE);
 
     const auto drawObject = [&](const SceneObject* object) {
         _ubo.setModelMat(object->model());
