@@ -40,7 +40,7 @@ struct PointLight {
     float linear;
     float quadratic;
 
-    sampler2D shadow_map;
+    samplerCube shadow_map;
 };
 
 struct Spotlight {
@@ -70,11 +70,33 @@ uniform Spotlight spotlight;
 
 #define PCF_KERNEL_SIZE 5
 
+#define MIN_BIAS_TEXELS 1.0
+#define SLOPE_BIAS_TEXELS 3.0
+
 uniform vec3 viewPos;
+
+uniform float pointShadowFarPlane;
 
 uniform Material material;
 
 out vec4 fragColor;
+
+float calculatePointShadowValue(samplerCube shadowMap, vec3 lightPos, vec3 normal) {
+    vec3 fragToLight = fs_in.pos - lightPos;
+
+    float closestDepth = texture(shadowMap, fragToLight).r;
+
+    closestDepth *= pointShadowFarPlane;
+
+    float currentDepth = length(fragToLight);
+
+    float faceSize = textureSize(shadowMap, 0).x;
+    float texelWorld = 2.0 * length(fragToLight) / faceSize;
+    float cosTheta = max(dot(normal, normalize(-fragToLight)), 0.0);
+    float shadowBias = texelWorld * (MIN_BIAS_TEXELS + SLOPE_BIAS_TEXELS * (1.0 - cosTheta));
+    float shadow = currentDepth - shadowBias > closestDepth ? 1.0 : 0.0;
+    return shadow;
+}
 
 float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
                            vec3 lightDir, vec3 normal) {
@@ -85,7 +107,7 @@ float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
     if (currentDepth > 1.0)
         return 0.0;
 
-    float shadow_bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    float shadowBias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
     float shadow = 0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     int kernel_half = (PCF_KERNEL_SIZE - 1) / 2;
@@ -93,7 +115,7 @@ float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
         for (int y = -kernel_half; y <= kernel_half; ++y) {
             float pcfDepth =
                 texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
-            shadow += currentDepth - shadow_bias > pcfDepth ? 1.0 : 0.0;
+            shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
         }
     }
     shadow /= PCF_KERNEL_SIZE * PCF_KERNEL_SIZE;
@@ -121,6 +143,7 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir,
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
+    // float shadow = 0;
     float shadow = calculateShadowValue(fs_in.dirLightSpaceFragPos,
                                         light.shadow_map, lightDir, normal);
 
@@ -143,8 +166,8 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
     float attenuation = 1.0 / (light.constant + light.linear * dist +
                                light.quadratic * (dist * dist));
 
-    float shadow = 0;
-    // calculateShadowValue(vec4(fs_in.pos, 1), light.shadow_map, lightDir);
+    // float shadow = 0;
+    float shadow = calculatePointShadowValue(light.shadow_map, light.position, normal);
 
     vec3 pointlight_value =
         calculateLightValue(diff, spec, light.ambient, light.diffuse,

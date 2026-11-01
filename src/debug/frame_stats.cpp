@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace {
-    constexpr const char* SECTION_NAMES[] = {"Control update", "Instance move", "Draw"};
+    constexpr const char* SECTION_NAMES[] = {"Control update", "Instance move", "Shadows", "Draw"};
 
     double milliseconds(std::chrono::steady_clock::duration duration) {
         return std::chrono::duration<double, std::milli>(duration).count();

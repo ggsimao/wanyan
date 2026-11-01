@@ -72,8 +72,9 @@ public:
     void setMat4(const std::string& name, const glm::mat4& value) const;
 
     template <typename Texture>
-    void setTexture(const std::string& name, const TextureDrawBinding<Texture>& texture) const {
-        setInt(name, texture.unit());
+    void setTexture(const std::string& name, const TextureDrawBinding<Texture>& texture,
+                std::size_t index = 0) const {
+        setInt(name, texture.unit(index));
     }
     void setMaterial(const std::string& name, const MaterialDrawBinding& material) const;
 

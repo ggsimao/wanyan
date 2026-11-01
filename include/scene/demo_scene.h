@@ -25,6 +25,7 @@ struct DemoShaders {
     ShaderProgram screen;
     ShaderProgram skybox;
     ShaderProgram shadow;
+    ShaderProgram pointShadow;
 
     // The references SceneRenderer draws with.
     SceneShaders forRenderer() const;

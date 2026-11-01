@@ -20,7 +20,7 @@ namespace debug {
     //     stats.endFrame(program.showStats());
     class FrameStats {
     public:
-        enum Section { UPDATE, INSTANCES, DRAW, SECTION_COUNT };
+        enum Section { UPDATE, INSTANCES, SHADOWS, DRAW, SECTION_COUNT };
 
         // Adds the time from its construction to its destruction to a section.
         class Timer {

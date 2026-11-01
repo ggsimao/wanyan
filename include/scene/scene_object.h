@@ -46,8 +46,9 @@ public:
     void setOutlineColor(const glm::vec3& color);
     void enableOutline(bool enable);
     bool hasOutline() const;
-    bool isTransparent() const;
 
+    // Transparency
+    bool isTransparent() const;
     void setTransparent(bool transparent);
 
     const Drawable& drawable() const;
