@@ -22,7 +22,7 @@ PointShadowFrameBuffer::PointShadowFrameBuffer(GLsizei width, GLsizei height)
         read.disableReadBuffer();
 
         PointShadowDrawBinding draw(*this);
-        draw.attachDepth(_texture);
+        draw.attachFace(0);
         draw.disableDrawBuffer();
         status = draw.status();
     }
@@ -117,9 +117,11 @@ PointShadowDrawBinding::~PointShadowDrawBinding() {
                _previousViewport[3]);
 }
 
-void PointShadowDrawBinding::attachDepth(const CubeMap& texture) {
+void PointShadowDrawBinding::attachFace(std::size_t face) {
     assertActive();
-    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture.id(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                           GL_TEXTURE_CUBE_MAP_POSITIVE_X + static_cast<GLenum>(face),
+                           object().texture().id(), 0);
 }
 
 void PointShadowDrawBinding::disableDrawBuffer() {

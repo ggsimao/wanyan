@@ -119,13 +119,15 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
     ShaderProgramBinding pointShader(_shaders.pointShadow);
     for (const auto& lamp : scene.lighting.points) {
         PointShadowDrawBinding pointTarget(lamp.shadowMap);
-        pointTarget.clearDepth();
         PointLightSpace pointSpaces = pointLightSpaces(lamp);
-        for (size_t i = 0; i < 6; ++i)
-            pointShader.setMat4(std::format("shadowMatrices[{}]", i), pointSpaces.matrix(i));
         pointShader.setVec3("lightPos", lamp.position);
         pointShader.setFloat("farPlane", FAR_PLANE);
-        drawShadowCasters(scene, pointShader, lamp.fixtureIndices);
+        for (size_t i = 0; i < 6; ++i) {
+            pointTarget.attachFace(i);
+            pointTarget.clearDepth();
+            pointShader.setMat4("shadowMatrix", pointSpaces.matrix(i));
+            drawShadowCasters(scene, pointShader, lamp.fixtureIndices);
+        }
     }
 }
 
