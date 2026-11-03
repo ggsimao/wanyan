@@ -46,7 +46,6 @@ namespace {
     constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
     constexpr const char* SHADOW_FRAG_SHADER = "shaders/shadow_frag_shader.fs";
     constexpr const char* POINTSHADOW_VERT_SHADER = "shaders/pointshadow_vert_shader.vs";
-    constexpr const char* POINTSHADOW_GEO_SHADER = "shaders/pointshadow_geo_shader.gs";
     constexpr const char* POINTSHADOW_FRAG_SHADER = "shaders/pointshadow_frag_shader.fs";
 
     // Textures and models
@@ -200,7 +199,7 @@ DemoShaders loadDemoShaders() {
         ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
         ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER), asset(SKYBOX_FRAG_SHADER)),
         ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER), asset(SHADOW_FRAG_SHADER)),
-        ShaderProgram::fromFiles("PointShadow", asset(POINTSHADOW_VERT_SHADER), asset(POINTSHADOW_GEO_SHADER),
+        ShaderProgram::fromFiles("PointShadow", asset(POINTSHADOW_VERT_SHADER),
                                  asset(POINTSHADOW_FRAG_SHADER)),
     };
 }

@@ -55,6 +55,10 @@ protected:
         assert(s_active == this && "Using a binding that has been superseded");
     }
 
+protected:
+    const T& object() const {
+        return _obj;
+    }
 private:
     void apply() const {
         if (_obj) (_obj->*Bind)();

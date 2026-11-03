@@ -47,7 +47,7 @@ public:
     explicit PointShadowDrawBinding(const PointShadowFrameBuffer& sfbo);
     ~PointShadowDrawBinding();
 
-    void attachDepth(const CubeMap& texture);
+    void attachFace(std::size_t face);
     void disableDrawBuffer();
     void clearDepth();
     GLenum status() const;
