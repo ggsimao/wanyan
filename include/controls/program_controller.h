@@ -1,7 +1,7 @@
 #pragma once
 
 #include "controls/controls.h"
-#include "program.h"
+#include "app/program.h"
 
 // Escape (or closing the window) quits; F3 toggles the frame statistics.
 class ProgramController : public Slot, public Controller<Program> {

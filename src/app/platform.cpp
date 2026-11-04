@@ -1,4 +1,4 @@
-#include "platform.h"
+#include "app/platform.h"
 
 #include "debug/gl_debug.h"
 
@@ -9,26 +9,14 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 
 namespace {
     std::runtime_error sdlError(const std::string& what) {
         return std::runtime_error(std::format("{}: {}", what, SDL_GetError()));
     }
-
-    // Whether an environment variable is switched on: set to anything other
-    // than an empty string or "0". Read once at startup.
-    bool envFlag(const char* name) {
-        const char* value = std::getenv(name);
-        if (value == nullptr) {
-            return false;
-        }
-        const std::string_view text(value);
-        return !text.empty() && text != "0";
-    }
 }  // namespace
 
-Platform::Platform(const char* title, int width, int height) : _width(width), _height(height) {
+Platform::Platform(const char* title, int width, int height, const PlatformOptions& options) : _width(width), _height(height) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         throw sdlError("Couldn't initialize SDL");
     }
@@ -71,7 +59,7 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
         glGetIntegerv(GL_MAJOR_VERSION, &glMajor);
         glGetIntegerv(GL_MINOR_VERSION, &glMinor);
         const bool contextIs4_6 = glMajor > 4 || (glMajor == 4 && glMinor >= 6);
-        const bool forcedUnlayering = envFlag("WANYAN_NO_LAYERED_SHADOWS");
+        const bool forcedUnlayering = options.forcedUnlayering;
 
         _gpuFeatures.layeredVertexOutput = (
             (shaderExtension ||
@@ -87,7 +75,7 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
             std::cerr << "Point shadow layering was disabled due to: " << reason << '\n';
         }
 
-        SDL_GL_SetSwapInterval(1);            // vsync, as in Rust; failure isn't fatal
+        SDL_GL_SetSwapInterval(options.noVSync ? 0 : 1);            // vsync, as in Rust; failure isn't fatal
         SDL_SetRelativeMouseMode(SDL_TRUE);   // captures the mouse for the camera
         debug::enableGlDebugOutput();
     } catch (...) {

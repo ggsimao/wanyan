@@ -238,8 +238,8 @@ Scene buildDemoScene(const Camera& camera) {
     return scene;
 }
 
-std::vector<RandomTransform> buildRockTransforms() {
-    std::mt19937 engine{std::random_device{}()};
+std::vector<RandomTransform> buildRockTransforms(std::uint32_t seed) {
+    std::mt19937 engine{seed};
     // How often each rock picks a new spin axis and drift direction, in
     // frames; 0 means never, as in Rust.
     std::uniform_int_distribution<unsigned> rate(0, 1000);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "platform.h"
+#include "app/platform.h"
 #include "random_transform.h"
 #include "scene/scene.h"
 #include "scene/scene_renderer.h"
@@ -39,4 +39,4 @@ DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures);
 Scene buildDemoScene(const Camera& camera);
 
 // One per rock instance, in the same order.
-std::vector<RandomTransform> buildRockTransforms();
+std::vector<RandomTransform> buildRockTransforms(std::uint32_t seed);

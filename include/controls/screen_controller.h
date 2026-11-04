@@ -15,5 +15,6 @@ private:
 
     bool _filterOn = false;
     bool _msaaOn = true;
+    bool _mirror = false;
     float _gamma = DEFAULT_GAMMA;
 };

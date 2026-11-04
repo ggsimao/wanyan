@@ -1,6 +1,6 @@
 #include "data/frame_buffer.h"
 
-#include "stb/stb_image_write.h"
+#include <stb/stb_image_write.h>
 
 #include <algorithm>
 #include <cctype>
