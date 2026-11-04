@@ -2,6 +2,11 @@
 
 #include <SDL2/SDL.h>
 
+struct GpuFeatures {
+    bool layeredVertexOutput = false;
+    bool unlayeredWasForced = false;
+};
+
 // Owns SDL, the window and the OpenGL 4.3 core context, and loads the GL
 // functions through GLEW. Construct it before any GL object, so that it's
 // destroyed after all of them: every GL object must be deleted while the
@@ -22,12 +27,14 @@ public:
     void swapBuffers();
     int width() const;
     int height() const;
+    const GpuFeatures& gpuFeatures() const;
 
 private:
     void release() noexcept;
 
     SDL_Window* _window = nullptr;
     SDL_GLContext _context = nullptr;
+    GpuFeatures _gpuFeatures;
     int _width;
     int _height;
 };

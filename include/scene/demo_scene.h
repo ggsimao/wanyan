@@ -1,5 +1,6 @@
 #pragma once
 
+#include "platform.h"
 #include "random_transform.h"
 #include "scene/scene.h"
 #include "scene/scene_renderer.h"
@@ -25,14 +26,14 @@ struct DemoShaders {
     ShaderProgram screen;
     ShaderProgram skybox;
     ShaderProgram shadow;
-    ShaderProgram pointShadow;
+    PointShadowShader pointShadow;
 
     // The references SceneRenderer draws with.
     SceneShaders forRenderer() const;
 };
 
 // Throws std::runtime_error if a shader file is missing or doesn't compile.
-DemoShaders loadDemoShaders();
+DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures);
 
 // Lights, objects and skybox. The flashlight starts at the camera.
 Scene buildDemoScene(const Camera& camera);

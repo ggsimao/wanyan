@@ -71,7 +71,7 @@ uniform Spotlight spotlight;
 #define PCF_KERNEL_SIZE 5
 
 #define MIN_BIAS_TEXELS 1.0
-#define SLOPE_BIAS_TEXELS 3.0
+#define SLOPE_BIAS_TEXELS 4.5
 
 uniform vec3 viewPos;
 

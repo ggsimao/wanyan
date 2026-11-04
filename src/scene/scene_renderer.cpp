@@ -31,6 +31,7 @@ namespace {
     constexpr float FAR_PLANE = 100.0f;
     constexpr float SUN_DISTANCE = 20.0f;
     constexpr float ASPECT_RATIO = 1.0f;  // as in the Rust version, until window resizing
+    constexpr size_t FACES = 6;
     const glm::vec3 WORLD_UP(0.0f, 1.0f, 0.0f);
 
     constexpr float OUTLINE_SCALE = 1.1f;
@@ -103,7 +104,7 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
         ShadowDrawBinding target(shadowMap);  // also sets the viewport to the map's size
         target.clearDepth();
         _ubo.setProjViewMat(space.projection * space.view);
-        drawShadowCasters(scene, shader, fixtureIndices);
+        drawShadowCasters(scene, shader, fixtureIndices, 1);
     };
     render(
         scene.lighting.directional.shadowMap,
@@ -116,23 +117,24 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
         scene.lighting.spotlight.fixtureIndices
     );
 
-    ShaderProgramBinding pointShader(_shaders.pointShadow);
+    ShaderProgramBinding pointShader(_shaders.pointShadow.program());
     for (const auto& lamp : scene.lighting.points) {
         PointShadowDrawBinding pointTarget(lamp.shadowMap);
         pointTarget.clearDepth();
         PointLightSpace pointSpaces = pointLightSpaces(lamp);
-        for (size_t i = 0; i < 6; ++i)
+        for (size_t i = 0; i < FACES; ++i)
             pointShader.setMat4(std::format("shadowMatrices[{}]", i), pointSpaces.matrix(i));
         pointShader.setVec3("lightPos", lamp.position);
         pointShader.setFloat("farPlane", FAR_PLANE);
-        drawShadowCasters(scene, pointShader, lamp.fixtureIndices);
+        drawShadowCasters(scene, pointShader, lamp.fixtureIndices, _shaders.pointShadow.layers());
     }
 }
 
 void SceneRenderer::drawShadowCasters(
     const Scene& scene,
     const ShaderProgramBinding& shader,
-    const std::optional<FixtureIndices>& fixtureIndices
+    const std::optional<FixtureIndices>& fixtureIndices,
+    GLsizei layers
 ) const {
     size_t index = 0;
     for (const SceneObject& object : scene.objects) {
@@ -142,7 +144,7 @@ void SceneRenderer::drawShadowCasters(
             shader.setInt("excludedInstance", -1);
         }
         _ubo.setModelMat(object.model());
-        object.drawPlain(shader);
+        object.drawPositions(shader, layers);
         index++;
     }
 }
