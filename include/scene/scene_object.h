@@ -55,8 +55,9 @@ public:
 
     // Draws every instance. Re-uploads the instances first if any changed.
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const;
-    void drawPlain(const ShaderProgramBinding& /*shader*/) const;
-    void drawVertices(const ShaderProgramBinding& /*shader*/) const;
+    void drawPlain(const ShaderProgramBinding& shader) const;
+    void drawVertices(const ShaderProgramBinding& shader) const;
+    void drawPositions(const ShaderProgramBinding& shader, GLsizei layers) const;
     // Draws the outline around the stencil written by draw(); the caller sets
     // up the outline shader and the scaled model matrix.
     void drawOutline(const ShaderProgramBinding& shader, TextureUnits& units) const;

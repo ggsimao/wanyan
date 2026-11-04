@@ -45,6 +45,7 @@ namespace {
     constexpr const char* SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
     constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
     constexpr const char* SHADOW_FRAG_SHADER = "shaders/shadow_frag_shader.fs";
+    constexpr const char* POINTSHADOW_LAYERED_VERT_SHADER = "shaders/pointshadow_layered_vert_shader.vs";
     constexpr const char* POINTSHADOW_VERT_SHADER = "shaders/pointshadow_vert_shader.vs";
     constexpr const char* POINTSHADOW_GEO_SHADER = "shaders/pointshadow_geo_shader.gs";
     constexpr const char* POINTSHADOW_FRAG_SHADER = "shaders/pointshadow_frag_shader.fs";
@@ -188,10 +189,28 @@ namespace {
 }  // namespace
 
 SceneShaders DemoShaders::forRenderer() const {
-    return {object, skybox, outline, shadow, pointShadow, debug};
+    return {
+        object,
+        skybox,
+        outline,
+        shadow,
+        pointShadow,
+        debug
+    };
 }
 
-DemoShaders loadDemoShaders() {
+DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
+    PointShadowShader pointShadow = gpuFeatures.layeredVertexOutput ?
+                                        PointShadowShader::layered(
+                                            "PointShadow",
+                                            asset(POINTSHADOW_LAYERED_VERT_SHADER),
+                                            asset(POINTSHADOW_FRAG_SHADER)
+                                        ) : PointShadowShader::withGeometryShader(
+                                            "PointShadow",
+                                            asset(POINTSHADOW_VERT_SHADER),
+                                            asset(POINTSHADOW_GEO_SHADER),
+                                            asset(POINTSHADOW_FRAG_SHADER)
+                                        );
     return {
         ShaderProgram::fromFiles("Object", asset(REGULAR_VERT_SHADER), asset(OBJECT_FRAG_SHADER)),
         ShaderProgram::fromFiles("Debug", asset(DEBUG_VERT_SHADER), asset(DEBUG_GEO_SHADER),
@@ -200,8 +219,7 @@ DemoShaders loadDemoShaders() {
         ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
         ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER), asset(SKYBOX_FRAG_SHADER)),
         ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER), asset(SHADOW_FRAG_SHADER)),
-        ShaderProgram::fromFiles("PointShadow", asset(POINTSHADOW_VERT_SHADER), asset(POINTSHADOW_GEO_SHADER),
-                                 asset(POINTSHADOW_FRAG_SHADER)),
+        std::move(pointShadow),
     };
 }
 

@@ -8,7 +8,6 @@
 #include "scene/demo_scene.h"
 #include "scene/scene_renderer.h"
 #include "screen.h"
-#include "textures/texture_2d.h"
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -54,7 +53,7 @@ int main() {
             "Debug working."
         );
 
-        const DemoShaders shaders = loadDemoShaders();
+        const DemoShaders shaders = loadDemoShaders(platform.gpuFeatures());
         UniformBuffer matrices(MATRICES_BINDING);
         matrices.bindBase();  // once: the attachment persists
 

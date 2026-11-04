@@ -1,6 +1,8 @@
 #pragma once
 
 #include "scene/scene.h"
+#include "shaders/point_shadow_shader.h"
+#include "textures/cube_map.h"
 
 class Camera;
 class ShaderProgram;
@@ -14,7 +16,7 @@ struct SceneShaders {
     const ShaderProgram& skybox;
     const ShaderProgram& outline;
     const ShaderProgram& shadow;
-    const ShaderProgram& pointShadow;
+    const PointShadowShader& pointShadow;
     const ShaderProgram& debug;
 };
 
@@ -49,7 +51,8 @@ private:
     void drawShadowCasters(
         const Scene& scene,
         const ShaderProgramBinding& shader,
-        const std::optional<FixtureIndices>& fixtureIndices
+        const std::optional<FixtureIndices>& fixtureIndices,
+        GLsizei layers
     ) const;
 
     SceneShaders _shaders;
