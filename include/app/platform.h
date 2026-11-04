@@ -7,6 +7,11 @@ struct GpuFeatures {
     bool unlayeredWasForced = false;
 };
 
+struct PlatformOptions {
+    bool forcedUnlayering = false;
+    bool noVSync = false;
+};
+
 // Owns SDL, the window and the OpenGL 4.3 core context, and loads the GL
 // functions through GLEW. Construct it before any GL object, so that it's
 // destroyed after all of them: every GL object must be deleted while the
@@ -17,7 +22,7 @@ struct GpuFeatures {
 class Platform {
 public:
     // Throws std::runtime_error, with SDL's or GLEW's message, on failure.
-    Platform(const char* title, int width, int height);
+    Platform(const char* title, int width, int height, const PlatformOptions& options);
     ~Platform();
     Platform(const Platform&) = delete;
     Platform& operator=(const Platform&) = delete;

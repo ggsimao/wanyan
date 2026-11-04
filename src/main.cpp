@@ -1,9 +1,10 @@
+#include "app/launch_options.h"
 #include "camera.h"
 #include "controls/controller_hub.h"
 #include "data/uniform_buffer.h"
 #include "debug/frame_stats.h"
-#include "platform.h"
-#include "program.h"
+#include "app/platform.h"
+#include "app/program.h"
 #include "random_transform.h"
 #include "scene/demo_scene.h"
 #include "scene/scene_renderer.h"
@@ -12,11 +13,13 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <CLI/CLI.hpp>
 
 #include <cassert>
 #include <chrono>
 #include <exception>
 #include <iostream>
+#include <random>
 #include <vector>
 
 namespace {
@@ -38,11 +41,40 @@ namespace {
     constexpr std::size_t ROCKS = 0;
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
     try {
+        CLI::App app{"Wanyan"};
+
+        LaunchOptions options;
+
+        // Register options
+        auto seedOption = app.add_option(
+            "--seed",
+            options.seed,
+            "Seed for RNG"
+        );
+        app.add_flag(
+            "--no-layered-shadows",
+            options.platformOptions.forcedUnlayering,
+            "Set if you don't want point shadow layering"
+        );
+        app.add_flag(
+            "--no-vsync",
+            options.platformOptions.noVSync,
+            "Set if you want VSync to be turned off"
+        );
+
+        // Execute the parsing
+        CLI11_PARSE(app, argc, argv);
+
+        if (!seedOption->count()) {
+            options.seed = std::random_device{}();
+        }
+        std::cout << "Seed: " << options.seed << '\n';
+
         // First, so it's destroyed last: every GL object below must be
         // deleted while its context still exists.
-        Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT);
+        Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, options.platformOptions);
         // Intentional startup self-check: confirms GL debug output reaches our callback
         glDebugMessageInsert(
             GL_DEBUG_SOURCE_APPLICATION,
@@ -58,8 +90,9 @@ int main() {
         matrices.bindBase();  // once: the attachment persists
 
         Camera camera(CAMERA_START);
+        RandomTransform::setSeed(options.seed);
         Scene scene = buildDemoScene(camera);
-        std::vector<RandomTransform> rockTransforms = buildRockTransforms();
+        std::vector<RandomTransform> rockTransforms = buildRockTransforms(options.seed);
 
         SceneRenderer renderer(shaders.forRenderer(), matrices);
         Screen screen(platform.width(), platform.height(), CLEAR_COLOR, shaders.screen);
@@ -108,8 +141,10 @@ int main() {
             {
                 auto timer = stats.time(debug::FrameStats::DRAW);
                 screen.drawOnFramebuffer(renderer, scene, camera);
-                mirror.drawOnFramebuffer(renderer, scene, camera.invert());
-                mirror.drawOnAnother(screen, INSET_SCALE, INSET_OFFSET);
+                if (screen.parameters().mirror) {
+                    mirror.drawOnFramebuffer(renderer, scene, camera.invert());
+                    mirror.drawOnAnother(screen, INSET_SCALE, INSET_OFFSET);
+                }
                 screen.drawOnScreen();
             }
 

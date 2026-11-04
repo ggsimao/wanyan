@@ -2,6 +2,7 @@
 
 #include "spatial.h"
 
+#include <cstdint>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
@@ -18,6 +19,8 @@ class RandomTransform {
 public:
     RandomTransform(float angularStep, float linearStep, unsigned angularRate,
                     unsigned linearRate);
+
+    static void setSeed(std::uint32_t seed);
 
     // Moves an object by a random offset within the given ranges.
     template <typename T>

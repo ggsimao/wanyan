@@ -32,6 +32,10 @@ namespace {
     }
 }  // namespace
 
+void RandomTransform::setSeed(std::uint32_t seed) {
+    engine().seed(seed);
+}
+
 RandomTransform::RandomTransform(float angularStep, float linearStep, unsigned angularRate,
                                  unsigned linearRate)
     : _angularStep(angularStep),
