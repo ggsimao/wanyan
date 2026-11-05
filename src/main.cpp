@@ -71,6 +71,7 @@ int main(int argc, char** argv) {
             options.seed = std::random_device{}();
         }
         std::cout << "Seed: " << options.seed << '\n';
+        RandomTransform::setSeed(options.seed);
 
         // First, so it's destroyed last: every GL object below must be
         // deleted while its context still exists.
@@ -90,7 +91,6 @@ int main(int argc, char** argv) {
         matrices.bindBase();  // once: the attachment persists
 
         Camera camera(CAMERA_START);
-        RandomTransform::setSeed(options.seed);
         Scene scene = buildDemoScene(camera);
         std::vector<RandomTransform> rockTransforms = buildRockTransforms(options.seed);
 
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
                 controls.update(frameMilliseconds,
                                 {.program=program, .camera=camera, .flashlight=scene.lighting.spotlight,
                                     .renderOptions=renderer.options(), .screen=screen.parameters(),
-                                    .rockTransforms=rockTransforms});
+                                    .rockTransforms=rockTransforms, .platform=platform});
             }
 
             // The flashlight is held by the camera.

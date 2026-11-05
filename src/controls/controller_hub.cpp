@@ -6,6 +6,7 @@ ControllerHub::ControllerHub() {
     _handler.connect(_flashlight);
     _handler.connect(_renderOptions);
     _handler.connect(_screen);
+    _handler.connect(_platform);
 }
 
 void ControllerHub::update(float frameMilliseconds, const ControlTargets& targets) {
@@ -19,4 +20,5 @@ void ControllerHub::update(float frameMilliseconds, const ControlTargets& target
     _renderOptions->processSignals(targets.renderOptions);
     _screen->processSignals(targets.screen);
     _randomTransforms.processSignals(targets.rockTransforms);
+    _platform->processSignals(targets.platform);
 }

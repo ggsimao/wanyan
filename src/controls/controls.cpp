@@ -1,5 +1,6 @@
 #include "controls/controls.h"
 
+#include <SDL_events.h>
 #include <algorithm>
 
 SignalHandler::SignalHandler() = default;
@@ -14,7 +15,11 @@ void SignalHandler::connect(const std::shared_ptr<Slot>& slot) {
 
 void SignalHandler::waitEvent() {
     SDL_Event ev;
+    auto mouseCaptured = SDL_GetRelativeMouseMode();
     while(SDL_PollEvent(&ev)) {
+        if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+            emit(SignalFocusLost{});
+        }
         switch (ev.type) {
             case SDL_KEYDOWN:
                 // Holding a key makes SDL repeat KEYDOWN; only the first
@@ -27,12 +32,21 @@ void SignalHandler::waitEvent() {
                 emit(SignalKeyReleased{ev.key.keysym});
                 break;
             case SDL_MOUSEMOTION:
-                // Relative motion since the last event, not the cursor's
-                // position: with relative mouse mode the cursor doesn't move.
-                emit(SignalMouseMoved{ev.motion.xrel, ev.motion.yrel});
+                if (mouseCaptured) {
+                    // Relative motion since the last event, not the cursor's
+                    // position: with relative mouse mode the cursor doesn't move.
+                    emit(SignalMouseMoved{ev.motion.xrel, ev.motion.yrel});
+                }
                 break;
             case SDL_MOUSEWHEEL:
-                emit(SignalMouseScrolled{ev.wheel.y});
+                if (mouseCaptured) {
+                    emit(SignalMouseScrolled{ev.wheel.y});
+                }
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (!SDL_GetRelativeMouseMode()) {
+                    emit(SignalCaptureRequested{});
+                }
                 break;
             case SDL_QUIT:
                 emit(SignalQuit{});

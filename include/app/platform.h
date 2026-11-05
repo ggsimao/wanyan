@@ -10,6 +10,7 @@ struct GpuFeatures {
 struct PlatformOptions {
     bool forcedUnlayering = false;
     bool noVSync = false;
+    bool mouseCaptured = true;
 };
 
 // Owns SDL, the window and the OpenGL 4.3 core context, and loads the GL
@@ -30,16 +31,20 @@ public:
     Platform& operator=(Platform&&) = delete;
 
     void swapBuffers();
+
     int width() const;
     int height() const;
     const GpuFeatures& gpuFeatures() const;
 
+    friend class PlatformController;
 private:
     void release() noexcept;
+    void setMouseCapture(bool captured);
 
     SDL_Window* _window = nullptr;
     SDL_GLContext _context = nullptr;
     GpuFeatures _gpuFeatures;
+    PlatformOptions _options;
     int _width;
     int _height;
 };
