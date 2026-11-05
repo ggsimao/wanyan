@@ -133,6 +133,9 @@ void SceneObject::drawOutline(const ShaderProgramBinding& shader, TextureUnits& 
 
 void SceneObject::uploadInstances() const {
     InstanceBufferBinding buffer(_instanceBuffer);
+    for (const auto& instance : _instances) {
+        instance.updateNormal();
+    }
     buffer.upload(_instances);
     _instancesDirty = false;
 }

@@ -188,6 +188,7 @@ void ShaderProgramBinding::setSpotlight(const std::string& name, const Spotlight
     setVec3(name + ".position", light.position);
     setVec3(name + ".direction", light.direction);
     setLightColors(name, light);
+    setAttenuation(name, light.attenuation);
     // The shader compares cosines, which avoids an acos per fragment.
     setFloat(name + ".phiCos", std::cos(light.innerCutoff));
     setFloat(name + ".gammaCos", std::cos(light.outerCutoff));
@@ -202,7 +203,7 @@ void ShaderProgramBinding::setLightColors(const std::string& name,
 
 void ShaderProgramBinding::setAttenuation(const std::string& name,
                                           const Attenuation& attenuation) const {
-    setFloat(name + ".constant", attenuation.constant);
-    setFloat(name + ".linear", attenuation.linear);
-    setFloat(name + ".quadratic", attenuation.quadratic);
+    setFloat(name + ".attenuation.constant", attenuation.constant);
+    setFloat(name + ".attenuation.linear", attenuation.linear);
+    setFloat(name + ".attenuation.quadratic", attenuation.quadratic);
 }

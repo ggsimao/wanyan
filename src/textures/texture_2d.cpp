@@ -1,8 +1,10 @@
 #include "textures/texture_2d.h"
 
-#include <format>
+#include <glm/common.hpp>
 #include <stb/stb_image.h>
 
+#include <algorithm>
+#include <format>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -16,6 +18,12 @@ namespace {
     using StbiPixels = std::unique_ptr<unsigned char, StbiDeleter>;
 
     inline constexpr unsigned char EMPTY_DATA[4] = {0, 0, 0, 0};
+
+    unsigned char toByte(const float& value) {
+        return static_cast<unsigned char>(
+            std::lround(std::clamp(value, 0.0f, 1.0f) * 255.0f)
+        );
+    }
 }  // namespace
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,9 +81,9 @@ void Texture2D::load(const std::filesystem::path& path) {
 Texture2D Texture2D::fromColor(TextureType type, const glm::vec3& color) {
     Texture2D texture(type);
     const unsigned char data[4] = {
-        static_cast<unsigned char>(color.r * 255.0f),
-        static_cast<unsigned char>(color.g * 255.0f),
-        static_cast<unsigned char>(color.b * 255.0f),
+        toByte(color.r),
+        toByte(color.g),
+        toByte(color.b),
         255,
     };
     {

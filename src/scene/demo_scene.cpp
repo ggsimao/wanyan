@@ -5,6 +5,7 @@
 #include "drawables/model.h"
 #include "drawables/skybox.h"
 #include "lighting.h"
+#include "random_transform.h"
 #include "shaders/shader_program.h"
 #include "textures/cube_map.h"
 #include "textures/material.h"
@@ -86,7 +87,8 @@ namespace {
         const glm::vec3 ambient(0.2f);
         const glm::vec3 diffuse(1.0f);
         const glm::vec3 specular(1.0f);
-        const Attenuation attenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
+        const Attenuation pointAttenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
+        const Attenuation flashlightAttenuation{.constant=1.0f, .linear=0.09f, .quadratic=0.032f};
 
         glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
         DirectionalLight sun(
@@ -106,14 +108,14 @@ namespace {
                     .specular=specular,
                     .fixtureIndices=FixtureIndices{.objectID=LAMPS_INDEX, .instanceID=instanceIndex}
                 },
-                attenuation
+                pointAttenuation
             );
             instanceIndex++;
         }
 
         Spotlight flashlight(
             camera.pos(), camera.dir(),
-            {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f},
+            {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f}, flashlightAttenuation,
             glm::radians(15.0f), glm::radians(20.0f)
         );
 

@@ -19,6 +19,12 @@ struct Material {
     int loadedSpecular;
 };
 
+struct Attenuation {
+    float constant;
+    float linear;
+    float quadratic;
+};
+
 struct DirLight {
     vec3 direction;
 
@@ -36,9 +42,7 @@ struct PointLight {
     vec3 diffuse;
     vec3 specular;
 
-    float constant;
-    float linear;
-    float quadratic;
+    Attenuation attenuation;
 
     samplerCube shadow_map;
 };
@@ -50,6 +54,8 @@ struct Spotlight {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    Attenuation attenuation;
 
     float phiCos;
     float gammaCos;
@@ -135,6 +141,13 @@ vec3 calculateLightValue(float diff_str, float spec_str, vec3 amb_color,
     return final_light;
 }
 
+float calculateAttenuation(vec3 lightPos, vec3 fragPos, Attenuation attenuation) {
+    float dist = length(lightPos - fragPos);
+    float value = 1.0 / (attenuation.constant + attenuation.linear * dist +
+                               attenuation.quadratic * (dist * dist));
+    return value;
+}
+
 vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir,
                                vec3 diff_tex_sum, vec3 spec_tex_sum) {
     vec3 lightDir = normalize(-light.direction);
@@ -162,9 +175,7 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
-    float dist = length(light.position - fragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * dist +
-                               light.quadratic * (dist * dist));
+    float attenuation = calculateAttenuation(light.position, fragPos, light.attenuation);
 
     // float shadow = 0;
     float shadow = calculatePointShadowValue(light.shadow_map, light.position, normal);
@@ -189,6 +200,8 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
     float intensity =
         clamp((theta - light.gammaCos) / (light.phiCos - light.gammaCos), 0.0, 1.0);
 
+    float attenuation = calculateAttenuation(light.position, fragPos, light.attenuation);
+
     // float shadow = 0;
     float shadow = calculateShadowValue(fs_in.spotlightSpaceFragPos,
                                         light.shadow_map, lightDir, normal);
@@ -196,7 +209,7 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
     vec3 spotlight_value =
         calculateLightValue(diff, spec, light.ambient, light.diffuse,
                             light.specular, diff_tex_sum, spec_tex_sum, shadow);
-    spotlight_value *= intensity;
+    spotlight_value *= intensity * attenuation;
 
     return spotlight_value;
 }

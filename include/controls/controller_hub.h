@@ -3,6 +3,7 @@
 #include "controls/camera_controller.h"
 #include "controls/controls.h"
 #include "controls/flashlight_controller.h"
+#include "controls/platform_controller.h"
 #include "controls/program_controller.h"
 #include "controls/random_transform_controller.h"
 #include "controls/render_options_controller.h"
@@ -19,6 +20,7 @@ struct ControlTargets {
     RenderOptions& renderOptions;
     ScreenParameters& screen;
     std::vector<RandomTransform>& rockTransforms;
+    Platform& platform;
 };
 
 // Every controller, and the signal handler that feeds input to the ones that
@@ -42,4 +44,5 @@ private:
     std::shared_ptr<ScreenController> _screen = std::make_shared<ScreenController>();
     // Driven by the frame, not input, so it isn't connected to the handler.
     RandomTransformController _randomTransforms;
+    std::shared_ptr<PlatformController> _platform = std::make_shared<PlatformController>();
 };

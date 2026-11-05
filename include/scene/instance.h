@@ -15,13 +15,19 @@
 class Instance : public Spatial<Instance> {
 public:
     const glm::mat4& model() const { return _model; }
-    // Keeps the normal matrix in step with the model matrix, since both are
-    // uploaded together.
+
+    // Doesn't update the normal matrix, it has to be done manually.
     void setModel(const glm::mat4& model) {
         _model = model;
-        _normal = normalMatrix();
     }
-    const glm::mat3& normal() const { return _normal; }
+
+    void updateNormal() const {
+        _normal = cofactorDetMatrix();
+    }
+
+    const glm::mat3& normal() const {
+        return _normal;
+    }
 
     // Byte offsets for the instance attribute setup.
     static constexpr std::size_t modelOffset() { return offsetof(Instance, _model); }
@@ -29,7 +35,7 @@ public:
 
 private:
     glm::mat4 _model{1.0f};
-    glm::mat3 _normal{1.0f};
+    mutable glm::mat3 _normal{1.0f};
 };
 
 static_assert(std::is_trivially_copyable_v<Instance>,

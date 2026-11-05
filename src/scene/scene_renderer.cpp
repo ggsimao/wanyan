@@ -236,7 +236,7 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
     const auto drawObject = [&](const SceneObject* object) {
         _ubo.setModelMat(object->model());
-        _ubo.setNormalMat(object->normalMatrix());
+        _ubo.setNormalMat(object->cofactorDetMatrix());
         object->draw(shader, units);
 
         if (_options.visualizeNormals) {

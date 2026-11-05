@@ -16,7 +16,9 @@ namespace {
     }
 }  // namespace
 
-Platform::Platform(const char* title, int width, int height, const PlatformOptions& options) : _width(width), _height(height) {
+Platform::Platform(
+    const char* title, int width, int height, const PlatformOptions& options
+) : _options(options), _width(width), _height(height) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         throw sdlError("Couldn't initialize SDL");
     }
@@ -59,24 +61,23 @@ Platform::Platform(const char* title, int width, int height, const PlatformOptio
         glGetIntegerv(GL_MAJOR_VERSION, &glMajor);
         glGetIntegerv(GL_MINOR_VERSION, &glMinor);
         const bool contextIs4_6 = glMajor > 4 || (glMajor == 4 && glMinor >= 6);
-        const bool forcedUnlayering = options.forcedUnlayering;
 
         _gpuFeatures.layeredVertexOutput = (
             (shaderExtension ||
             contextIs4_6) &&
-            !forcedUnlayering
+            !options.forcedUnlayering
         );
-        _gpuFeatures.unlayeredWasForced = forcedUnlayering;
+        _gpuFeatures.unlayeredWasForced = options.forcedUnlayering;
 
         if (!_gpuFeatures.layeredVertexOutput) {
             std::string reason;
             if (!(contextIs4_6 || shaderExtension)) reason = "Unsupported GL version with no extension.";
-            if (forcedUnlayering) reason = "Unlayering was forced by environment variable WANYAN_NO_LAYERED_SHADOWS.";
+            if (options.forcedUnlayering) reason = "Unlayering was forced by environment variable WANYAN_NO_LAYERED_SHADOWS.";
             std::cerr << "Point shadow layering was disabled due to: " << reason << '\n';
         }
 
         SDL_GL_SetSwapInterval(options.noVSync ? 0 : 1);            // vsync, as in Rust; failure isn't fatal
-        SDL_SetRelativeMouseMode(SDL_TRUE);   // captures the mouse for the camera
+        SDL_SetRelativeMouseMode(static_cast<SDL_bool>(options.mouseCaptured));   // captures the mouse for the camera
         debug::enableGlDebugOutput();
     } catch (...) {
         release();
@@ -114,4 +115,9 @@ int Platform::height() const {
 
 const GpuFeatures& Platform::gpuFeatures() const {
     return _gpuFeatures;
+}
+
+void Platform::setMouseCapture(bool captured) {
+    _options.mouseCaptured = captured;
+    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(captured));
 }
