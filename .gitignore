@@ -1,6 +1,7 @@
 .cache
 .vscode
 build
+build-release
 .clang-format
 .clangd
 .resources
