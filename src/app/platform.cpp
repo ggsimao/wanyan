@@ -1,10 +1,12 @@
-#include "platform.h"
+#include "app/platform.h"
 
 #include "debug/gl_debug.h"
 
 #include <GL/glew.h>
 
+#include <cstdlib>
 #include <format>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -14,7 +16,9 @@ namespace {
     }
 }  // namespace
 
-Platform::Platform(const char* title, int width, int height) : _width(width), _height(height) {
+Platform::Platform(
+    const char* title, int width, int height, const PlatformOptions& options
+) : _options(options), _width(width), _height(height) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         throw sdlError("Couldn't initialize SDL");
     }
@@ -46,13 +50,34 @@ Platform::Platform(const char* title, int width, int height) : _width(width), _h
             throw std::runtime_error(std::format("Couldn't initialize GLEW: {}",
                 reinterpret_cast<const char*>(glewGetErrorString(glewStatus))));
         }
+
         // glewInit queries extensions the old way, which a core profile
         // rejects with a harmless GL_INVALID_ENUM. Clear it so it isn't
         // mistaken for an error of ours.
         glGetError();
 
-        SDL_GL_SetSwapInterval(1);            // vsync, as in Rust; failure isn't fatal
-        SDL_SetRelativeMouseMode(SDL_TRUE);   // captures the mouse for the camera
+        const bool shaderExtension = static_cast<bool>(GLEW_ARB_shader_viewport_layer_array);
+        GLint glMajor = 0, glMinor = 0;
+        glGetIntegerv(GL_MAJOR_VERSION, &glMajor);
+        glGetIntegerv(GL_MINOR_VERSION, &glMinor);
+        const bool contextIs4_6 = glMajor > 4 || (glMajor == 4 && glMinor >= 6);
+
+        _gpuFeatures.layeredVertexOutput = (
+            (shaderExtension ||
+            contextIs4_6) &&
+            !options.forcedUnlayering
+        );
+        _gpuFeatures.unlayeredWasForced = options.forcedUnlayering;
+
+        if (!_gpuFeatures.layeredVertexOutput) {
+            std::string reason;
+            if (!(contextIs4_6 || shaderExtension)) reason = "Unsupported GL version with no extension.";
+            if (options.forcedUnlayering) reason = "Unlayering was forced by environment variable WANYAN_NO_LAYERED_SHADOWS.";
+            std::cerr << "Point shadow layering was disabled due to: " << reason << '\n';
+        }
+
+        SDL_GL_SetSwapInterval(options.noVSync ? 0 : 1);            // vsync, as in Rust; failure isn't fatal
+        SDL_SetRelativeMouseMode(static_cast<SDL_bool>(options.mouseCaptured));   // captures the mouse for the camera
         debug::enableGlDebugOutput();
     } catch (...) {
         release();
@@ -86,4 +111,13 @@ int Platform::width() const {
 
 int Platform::height() const {
     return _height;
+}
+
+const GpuFeatures& Platform::gpuFeatures() const {
+    return _gpuFeatures;
+}
+
+void Platform::setMouseCapture(bool captured) {
+    _options.mouseCaptured = captured;
+    SDL_SetRelativeMouseMode(static_cast<SDL_bool>(captured));
 }

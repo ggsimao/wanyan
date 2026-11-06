@@ -1,5 +1,6 @@
 #include "scene/scene_object.h"
 
+#include "data/buffer.h"
 #include "render_state/capability.h"
 #include "render_state/stencil.h"
 #include "textures/draw_binding.h"
@@ -112,6 +113,13 @@ void SceneObject::drawVertices(const ShaderProgramBinding& shader) const {
     _drawable->drawVerticesInstanced(shader, static_cast<GLsizei>(_instances.size()));
 }
 
+void SceneObject::drawPositions(const ShaderProgramBinding& shader, GLsizei layers) const {
+    if (_instancesDirty) {
+        uploadInstances();
+    }
+    _drawable->drawPositionsInstanced(shader, static_cast<GLsizei>(_instances.size()), layers);
+}
+
 void SceneObject::drawOutline(const ShaderProgramBinding& shader, TextureUnits& units) const {
     // Only where the object itself didn't write to the stencil buffer, on top
     // of everything else. Each guard restores whatever was set before.
@@ -125,6 +133,9 @@ void SceneObject::drawOutline(const ShaderProgramBinding& shader, TextureUnits& 
 
 void SceneObject::uploadInstances() const {
     InstanceBufferBinding buffer(_instanceBuffer);
+    for (const auto& instance : _instances) {
+        instance.updateNormal();
+    }
     buffer.upload(_instances);
     _instancesDirty = false;
 }

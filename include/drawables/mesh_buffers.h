@@ -26,8 +26,10 @@ public:
 
     void draw() const;
     void drawVertices() const;
+    void drawPositions() const;
     void drawInstanced(GLsizei instances) const;
     void drawVerticesInstanced(GLsizei instances) const;
+    void drawPositionsInstanced(GLsizei instances, GLsizei layers) const;
 
     // Reads per-instance model and normal matrices (see Instance) from the
     // given buffer, at attribute locations 3-9.

@@ -33,3 +33,7 @@ void Canvas::drawPlain(const ShaderProgramBinding& /*shader*/) const {
 void Canvas::drawVertices(const ShaderProgramBinding& /*shader*/) const {
     _buffers.drawVertices();
 }
+
+void Canvas::drawPositions(const ShaderProgramBinding& /*shader*/) const {
+    _buffers.drawPositions();
+}

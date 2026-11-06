@@ -4,6 +4,9 @@
 #include "drawables/basic_mesh.h"
 #include "drawables/model.h"
 #include "drawables/skybox.h"
+#include "lighting.h"
+#include "random_transform.h"
+#include "shaders/shader_program.h"
 #include "textures/cube_map.h"
 #include "textures/material.h"
 #include "textures/texture_2d.h"
@@ -28,6 +31,8 @@ namespace {
         return std::filesystem::path(WANYAN_ROOT) / relative;
     }
 
+    constexpr size_t LAMPS_INDEX = 3;
+
     // Shaders
     constexpr const char* REGULAR_VERT_SHADER = "shaders/regular_vert_shader.vs";
     constexpr const char* OBJECT_FRAG_SHADER = "shaders/object_frag_shader.fs";
@@ -41,6 +46,10 @@ namespace {
     constexpr const char* SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
     constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
     constexpr const char* SHADOW_FRAG_SHADER = "shaders/shadow_frag_shader.fs";
+    constexpr const char* POINTSHADOW_LAYERED_VERT_SHADER = "shaders/pointshadow_layered_vert_shader.vs";
+    constexpr const char* POINTSHADOW_VERT_SHADER = "shaders/pointshadow_vert_shader.vs";
+    constexpr const char* POINTSHADOW_GEO_SHADER = "shaders/pointshadow_geo_shader.gs";
+    constexpr const char* POINTSHADOW_FRAG_SHADER = "shaders/pointshadow_frag_shader.fs";
 
     // Textures and models
     constexpr const char* CONTAINER_TEXTURE = "resources/textures/container2.png";
@@ -53,9 +62,6 @@ namespace {
 
     // Not used yet; kept for later. Commented out because unused constants
     // are a warning, and -Werror makes that an error.
-    // constexpr const char* POINTSHADOW_VERT_SHADER = "shaders/pointshadow_vert_shader.vs";
-    // constexpr const char* POINTSHADOW_GEO_SHADER = "shaders/pointshadow_geo_shader.gs";
-    // constexpr const char* POINTSHADOW_FRAG_SHADER = "shaders/pointshadow_frag_shader.fs";
     // constexpr const char* WALL_TEXTURE = "resources/textures/wall.jpg";
     // constexpr const char* FACE_TEXTURE = "resources/textures/awesomeface.png";
     // constexpr const char* GRASS_TEXTURE = "resources/textures/grass.png";
@@ -78,25 +84,46 @@ namespace {
     // ------------------------------------------------------------ lighting
 
     Lighting buildLighting(const Camera& camera) {
-        const glm::vec3 ambient(0.2f);
-        const glm::vec3 diffuse(1.0f);
-        const glm::vec3 specular(1.0f);
-        const Attenuation attenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
+        const glm::vec3 white(1.0f);
+        const Attenuation pointAttenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
+        const Attenuation flashlightAttenuation{.constant=1.0f, .linear=0.09f, .quadratic=0.032f};
 
         glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
-        DirectionalLight sun(glm::normalize(sun_dir), {.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular});
+        DirectionalLight sun(
+            glm::normalize(sun_dir),
+            {.color=white, .intensity=1.0f}
+        );
 
         std::vector<PointLight> lamps;
+        size_t instanceIndex = 0;
         for (const glm::vec3& position : {glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(-1.0f, -2.0f, -1.0f),
                                           glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, -2.5f)}) {
-            lamps.emplace_back(position, LightColors{.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular}, attenuation);
+            lamps.emplace_back(
+                position,
+                Light{
+                    .color=white,
+                    .intensity=0.5f,
+                    .fixtureIndices=FixtureIndices{.objectID=LAMPS_INDEX, .instanceID=instanceIndex}
+                },
+                pointAttenuation
+            );
+            instanceIndex++;
         }
 
-        Spotlight flashlight(camera.pos(), camera.dir(),
-                             {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f},
-                             glm::radians(15.0f), glm::radians(20.0f));
+        Spotlight flashlight(
+            camera.pos(), camera.dir(),
+            {.color=white, .intensity=0.7f}, flashlightAttenuation,
+            glm::radians(15.0f), glm::radians(20.0f)
+        );
 
-        return Lighting{std::move(sun), std::move(lamps), std::move(flashlight)};
+        glm::vec3 ambientColor(0.02, 0.02, 0.02);
+
+        return Lighting{
+            std::move(sun),
+            std::move(lamps),
+            std::move(flashlight),
+            std::move(ambientColor)
+        };
     }
 
     // ------------------------------------------------------------- objects
@@ -168,10 +195,28 @@ namespace {
 }  // namespace
 
 SceneShaders DemoShaders::forRenderer() const {
-    return {object, skybox, outline, shadow, debug};
+    return {
+        object,
+        skybox,
+        outline,
+        shadow,
+        pointShadow,
+        debug
+    };
 }
 
-DemoShaders loadDemoShaders() {
+DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
+    PointShadowShader pointShadow = gpuFeatures.layeredVertexOutput ?
+                                        PointShadowShader::layered(
+                                            "PointShadow",
+                                            asset(POINTSHADOW_LAYERED_VERT_SHADER),
+                                            asset(POINTSHADOW_FRAG_SHADER)
+                                        ) : PointShadowShader::withGeometryShader(
+                                            "PointShadow",
+                                            asset(POINTSHADOW_VERT_SHADER),
+                                            asset(POINTSHADOW_GEO_SHADER),
+                                            asset(POINTSHADOW_FRAG_SHADER)
+                                        );
     return {
         ShaderProgram::fromFiles("Object", asset(REGULAR_VERT_SHADER), asset(OBJECT_FRAG_SHADER)),
         ShaderProgram::fromFiles("Debug", asset(DEBUG_VERT_SHADER), asset(DEBUG_GEO_SHADER),
@@ -180,6 +225,7 @@ DemoShaders loadDemoShaders() {
         ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER), asset(SCREEN_FRAG_SHADER)),
         ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER), asset(SKYBOX_FRAG_SHADER)),
         ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER), asset(SHADOW_FRAG_SHADER)),
+        std::move(pointShadow),
     };
 }
 
@@ -198,8 +244,8 @@ Scene buildDemoScene(const Camera& camera) {
     return scene;
 }
 
-std::vector<RandomTransform> buildRockTransforms() {
-    std::mt19937 engine{std::random_device{}()};
+std::vector<RandomTransform> buildRockTransforms(std::uint32_t seed) {
+    std::mt19937 engine{seed};
     // How often each rock picks a new spin axis and drift direction, in
     // frames; 0 means never, as in Rust.
     std::uniform_int_distribution<unsigned> rate(0, 1000);

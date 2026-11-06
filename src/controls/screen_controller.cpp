@@ -7,6 +7,9 @@ void ScreenController::onKeyPressed(const SDL_Keysym& key) {
         case SDLK_e:
             _filterOn = !_filterOn;
             break;
+        case SDLK_r:
+            _mirror = !_mirror;
+            break;
         case SDLK_m:
             _msaaOn = !_msaaOn;
             break;
@@ -30,5 +33,6 @@ void ScreenController::onSignal(const SignalType& signal) {
 void ScreenController::processSignals(ScreenParameters& parameters) {
     parameters.filterOn = _filterOn;
     parameters.msaaOn = _msaaOn;
+    parameters.mirror = _mirror;
     parameters.gamma = _gamma;
 }

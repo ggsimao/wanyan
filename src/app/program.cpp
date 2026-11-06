@@ -1,4 +1,4 @@
-#include "program.h"
+#include "app/program.h"
 
 Program::Program() : _loopActive(true) {}
 

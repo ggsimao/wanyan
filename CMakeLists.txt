@@ -18,29 +18,23 @@ find_package(SDL2 CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(assimp REQUIRED)
+find_package(CLI11 REQUIRED)
+find_package(PkgConfig REQUIRED)
 
-# stb is third-party code: built separately, without the project's warnings,
-# so a new compiler's warning in it can't fail the build.
-add_library(stb STATIC
-    ${WANYAN_SOURCE_DIR}/stb/stb_image.cpp
-    ${WANYAN_SOURCE_DIR}/stb/stb_image_write.cpp
-)
-target_include_directories(stb PRIVATE ${WANYAN_INCLUDE_DIR})
-target_compile_options(stb PRIVATE -w)
+pkg_check_modules(STB REQUIRED IMPORTED_TARGET stb)
 
 # Every other .cpp under src/. CONFIGURE_DEPENDS re-checks for added or
 # removed files on each build.
 file(GLOB_RECURSE WANYAN_SOURCES CONFIGURE_DEPENDS ${WANYAN_SOURCE_DIR}/*.cpp)
-list(FILTER WANYAN_SOURCES EXCLUDE REGEX "/stb/")
 
 add_executable(wanyan ${WANYAN_SOURCES})
 target_include_directories(wanyan PRIVATE ${WANYAN_INCLUDE_DIR})
-target_link_libraries(wanyan PRIVATE stb SDL2::SDL2 OpenGL::GL GLEW::GLEW assimp::assimp)
+target_link_libraries(wanyan PRIVATE PkgConfig::STB SDL2::SDL2 OpenGL::GL GLEW::GLEW assimp::assimp)
 
 # Standard C++20, not GCC's gnu++20 dialect. Spelled out as properties:
 # with only cxx_std_20, CMake passes no flag when the compiler's default
 # already satisfies it, and the extensions stay on.
-set_target_properties(wanyan stb PROPERTIES
+set_target_properties(wanyan PROPERTIES
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF

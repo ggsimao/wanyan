@@ -46,16 +46,18 @@ public:
     void setOutlineColor(const glm::vec3& color);
     void enableOutline(bool enable);
     bool hasOutline() const;
-    bool isTransparent() const;
 
+    // Transparency
+    bool isTransparent() const;
     void setTransparent(bool transparent);
 
     const Drawable& drawable() const;
 
     // Draws every instance. Re-uploads the instances first if any changed.
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const;
-    void drawPlain(const ShaderProgramBinding& /*shader*/) const;
-    void drawVertices(const ShaderProgramBinding& /*shader*/) const;
+    void drawPlain(const ShaderProgramBinding& shader) const;
+    void drawVertices(const ShaderProgramBinding& shader) const;
+    void drawPositions(const ShaderProgramBinding& shader, GLsizei layers) const;
     // Draws the outline around the stencil written by draw(); the caller sets
     // up the outline shader and the scaled model matrix.
     void drawOutline(const ShaderProgramBinding& shader, TextureUnits& units) const;

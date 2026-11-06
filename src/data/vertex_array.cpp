@@ -2,6 +2,14 @@
 #include <stdexcept>
 #include <utility>
 
+namespace {
+    // glDrawElements takes the start as a byte offset into the bound element
+    // buffer, typed as a pointer for historical reasons.
+    const void* indexOffset(GLsizei first) {
+        return reinterpret_cast<const void*>(static_cast<std::size_t>(first) * sizeof(GLuint));
+    }
+} // namespace
+
 VertexArray::VertexArray() {
     glGenVertexArrays(1, &_id);
     if (_id == 0) throw std::runtime_error("Couldn't make a VAO");
@@ -53,15 +61,20 @@ void VertexArrayBinding::drawVerticesInstanced(GLsizei count, GLenum mode, GLsiz
     glDrawArraysInstanced(mode, 0, count, instances);
 }
 
-void VertexArrayBinding::drawElements(GLsizei count, GLenum mode) const {
+void VertexArrayBinding::drawElements(GLsizei count, GLenum mode, GLsizei first) const {
     assertActive();
-    glDrawElements(mode, count, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(mode, count, GL_UNSIGNED_INT, indexOffset(first));
 }
 
 void VertexArrayBinding::drawElementsInstanced(GLsizei count, GLsizei instances,
-                                               GLenum mode) const {
+                                               GLenum mode, GLsizei first) const {
     assertActive();
-    glDrawElementsInstanced(mode, count, GL_UNSIGNED_INT, nullptr, instances);
+    glDrawElementsInstanced(mode, count, GL_UNSIGNED_INT, indexOffset(first), instances);
+}
+
+void VertexArrayBinding::attribDivisor(GLuint index, GLuint divisor) {
+    assertActive();
+    glVertexAttribDivisor(index, divisor);
 }
 
 VertexArrayBinding::ArrayBufferBinding VertexArrayBinding::bindABO(const ArrayBuffer& abo) {
@@ -89,11 +102,6 @@ void VertexArrayBinding::ArrayBufferBinding::attribPointer(GLuint index, GLint c
     glEnableVertexAttribArray(index);
     glVertexAttribPointer(index, components, type, normalized, stride,
                           reinterpret_cast<const void*>(offset));
-}
-
-void VertexArrayBinding::ArrayBufferBinding::attribDivisor(GLuint index, GLuint divisor) {
-    assertActive();
-    glVertexAttribDivisor(index, divisor);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

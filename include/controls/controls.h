@@ -20,8 +20,18 @@ struct SignalMouseScrolled {
     int delta;
 };
 struct SignalQuit {};
+struct SignalFocusLost {};
+struct SignalCaptureRequested {};
 using SignalType =
-    std::variant<SignalKeyPressed, SignalKeyReleased, SignalMouseMoved, SignalMouseScrolled, SignalQuit>;
+    std::variant<
+        SignalKeyPressed,
+        SignalKeyReleased,
+        SignalMouseMoved,
+        SignalMouseScrolled,
+        SignalQuit,
+        SignalFocusLost,
+        SignalCaptureRequested
+    >;
 
 class Slot {
 public:
