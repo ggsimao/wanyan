@@ -27,20 +27,14 @@ struct Attenuation {
 
 struct DirLight {
     vec3 direction;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec3 radiance;
 
     sampler2D shadow_map;
 };
 
 struct PointLight {
     vec3 position;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec3 radiance;
 
     Attenuation attenuation;
 
@@ -50,10 +44,7 @@ struct PointLight {
 struct Spotlight {
     vec3 position;
     vec3 direction;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec3 radiance;
 
     Attenuation attenuation;
 
@@ -73,6 +64,8 @@ layout(std140, binding = 0) uniform Matrices {
 uniform DirLight dirLight;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform Spotlight spotlight;
+
+uniform vec3 ambientColor;
 
 #define PCF_KERNEL_SIZE 5
 
@@ -129,14 +122,12 @@ float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
     return shadow;
 }
 
-vec3 calculateLightValue(float diff_str, float spec_str, vec3 amb_color,
-                         vec3 diff_color, vec3 spec_color, vec3 diff_tex_sum,
-                         vec3 spec_tex_sum, float shadow) {
-    vec3 ambient = diff_tex_sum * amb_color;
-    vec3 diffuse = diff_tex_sum * diff_color * diff_str;
-    vec3 specular = spec_tex_sum * spec_color * spec_str;
+vec3 calculateLightValue(float diff_str, float spec_str, vec3 radiance,
+                         vec3 diff_tex_sum, vec3 spec_tex_sum, float shadow) {
+    vec3 diffuse = diff_tex_sum * radiance * diff_str;
+    vec3 specular = spec_tex_sum * radiance * spec_str;
 
-    vec3 final_light = ambient + (1 - shadow) * (diffuse + specular);
+    vec3 final_light = (1 - shadow) * (diffuse + specular);
 
     return final_light;
 }
@@ -161,8 +152,7 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir,
                                         light.shadow_map, lightDir, normal);
 
     vec3 directional_value =
-        calculateLightValue(diff, spec, light.ambient, light.diffuse,
-                            light.specular, diff_tex_sum, spec_tex_sum, shadow);
+        calculateLightValue(diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
 
     return directional_value;
 }
@@ -181,8 +171,7 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
     float shadow = calculatePointShadowValue(light.shadow_map, light.position, normal);
 
     vec3 pointlight_value =
-        calculateLightValue(diff, spec, light.ambient, light.diffuse,
-                            light.specular, diff_tex_sum, spec_tex_sum, shadow);
+        calculateLightValue(diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
     pointlight_value *= attenuation;
 
     return pointlight_value;
@@ -207,8 +196,7 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
                                         light.shadow_map, lightDir, normal);
 
     vec3 spotlight_value =
-        calculateLightValue(diff, spec, light.ambient, light.diffuse,
-                            light.specular, diff_tex_sum, spec_tex_sum, shadow);
+        calculateLightValue(diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
     spotlight_value *= intensity * attenuation;
 
     return spotlight_value;
@@ -250,6 +238,8 @@ void main() {
         calculateSpotlight(spotlight, normal, fs_in.pos, viewDir,
                            diff_tex_sum, spec_tex_sum);
     result += spotlight_value;
+
+    result += ambientColor * diff_tex_sum;
 
     fragColor = vec4(result, alpha);
 }

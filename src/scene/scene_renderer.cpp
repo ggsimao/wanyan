@@ -81,6 +81,7 @@ namespace {
             shader.setPointLight(std::format("pointLights[{}]", i), lighting.points[i]);
         }
         shader.setSpotlight("spotlight", lighting.spotlight);
+        shader.setVec3("ambientColor", lighting.effectiveAmbient());
     }
 }  // namespace
 
