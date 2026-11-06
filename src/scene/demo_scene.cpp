@@ -84,16 +84,14 @@ namespace {
     // ------------------------------------------------------------ lighting
 
     Lighting buildLighting(const Camera& camera) {
-        const glm::vec3 ambient(0.2f);
-        const glm::vec3 diffuse(1.0f);
-        const glm::vec3 specular(1.0f);
+        const glm::vec3 white(1.0f);
         const Attenuation pointAttenuation{.constant=1.0f, .linear=0.5f, .quadratic=0.25f};
         const Attenuation flashlightAttenuation{.constant=1.0f, .linear=0.09f, .quadratic=0.032f};
 
         glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
         DirectionalLight sun(
             glm::normalize(sun_dir),
-            {.ambient=ambient / 4.0f, .diffuse=diffuse, .specular=specular}
+            {.color=white, .intensity=1.0f}
         );
 
         std::vector<PointLight> lamps;
@@ -102,10 +100,9 @@ namespace {
                                           glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, -2.5f)}) {
             lamps.emplace_back(
                 position,
-                LightColors{
-                    .ambient=ambient / 4.0f,
-                    .diffuse=diffuse,
-                    .specular=specular,
+                Light{
+                    .color=white,
+                    .intensity=0.5f,
                     .fixtureIndices=FixtureIndices{.objectID=LAMPS_INDEX, .instanceID=instanceIndex}
                 },
                 pointAttenuation
@@ -115,11 +112,18 @@ namespace {
 
         Spotlight flashlight(
             camera.pos(), camera.dir(),
-            {.ambient=ambient / 4.0f, .diffuse=diffuse / 2.0f, .specular=specular / 2.0f}, flashlightAttenuation,
+            {.color=white, .intensity=0.7f}, flashlightAttenuation,
             glm::radians(15.0f), glm::radians(20.0f)
         );
 
-        return Lighting{std::move(sun), std::move(lamps), std::move(flashlight)};
+        glm::vec3 ambientColor(0.02, 0.02, 0.02);
+
+        return Lighting{
+            std::move(sun),
+            std::move(lamps),
+            std::move(flashlight),
+            std::move(ambientColor)
+        };
     }
 
     // ------------------------------------------------------------- objects

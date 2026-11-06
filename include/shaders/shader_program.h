@@ -16,7 +16,7 @@
 
 struct Attenuation;
 struct DirectionalLight;
-struct LightColors;
+struct Light;
 struct PointLight;
 struct Spotlight;
 
@@ -85,7 +85,7 @@ public:
     void setSpotlight(const std::string& name, const Spotlight& light) const;
 
 private:
-    void setLightColors(const std::string& name, const LightColors& colors) const;
+    void setLightRadiance(const std::string& name, const Light& colors) const;
     void setAttenuation(const std::string& name, const Attenuation& attenuation) const;
     const ShaderProgram& _program;
 };

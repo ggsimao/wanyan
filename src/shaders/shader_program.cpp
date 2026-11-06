@@ -175,30 +175,28 @@ void ShaderProgramBinding::setMaterial(const std::string& name,
 void ShaderProgramBinding::setDirectionalLight(const std::string& name,
                                                const DirectionalLight& light) const {
     setVec3(name + ".direction", light.direction);
-    setLightColors(name, light);
+    setLightRadiance(name, light);
 }
 
 void ShaderProgramBinding::setPointLight(const std::string& name, const PointLight& light) const {
     setVec3(name + ".position", light.position);
     setAttenuation(name, light.attenuation);
-    setLightColors(name, light);
+    setLightRadiance(name, light);
 }
 
 void ShaderProgramBinding::setSpotlight(const std::string& name, const Spotlight& light) const {
     setVec3(name + ".position", light.position);
     setVec3(name + ".direction", light.direction);
-    setLightColors(name, light);
+    setLightRadiance(name, light);
     setAttenuation(name, light.attenuation);
     // The shader compares cosines, which avoids an acos per fragment.
     setFloat(name + ".phiCos", std::cos(light.innerCutoff));
     setFloat(name + ".gammaCos", std::cos(light.outerCutoff));
 }
 
-void ShaderProgramBinding::setLightColors(const std::string& name,
-                                          const LightColors& colors) const {
-    setVec3(name + ".ambient", colors.effectiveAmbient());
-    setVec3(name + ".diffuse", colors.effectiveDiffuse());
-    setVec3(name + ".specular", colors.effectiveSpecular());
+void ShaderProgramBinding::setLightRadiance(const std::string& name,
+                                          const Light& color) const {
+    setVec3(name + ".radiance", color.effectiveRadiance());
 }
 
 void ShaderProgramBinding::setAttenuation(const std::string& name,
