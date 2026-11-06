@@ -12,6 +12,7 @@
 #include "render_state/stencil.h"
 #include "scene/scene_object.h"
 #include "shaders/shader_program.h"
+#include "shaders/uniform_name.h"
 #include "textures/cube_map.h"
 #include "textures/draw_binding.h"
 
@@ -23,7 +24,6 @@
 #include <format>
 #include <optional>
 #include <ranges>
-#include <string>
 #include <vector>
 
 namespace {
@@ -78,7 +78,8 @@ namespace {
     void setLightingUniforms(const ShaderProgramBinding& shader, const Lighting& lighting) {
         shader.setDirectionalLight("dirLight", lighting.directional);
         for (std::size_t i = 0; i < lighting.points.size(); ++i) {
-            shader.setPointLight(std::format("pointLights[{}]", i), lighting.points[i]);
+            UniformName pointLight("pointLights[{}]", i);
+            shader.setPointLight(pointLight.view(), lighting.points[i]);
         }
         shader.setSpotlight("spotlight", lighting.spotlight);
         shader.setVec3("ambientColor", lighting.effectiveAmbient());
@@ -228,7 +229,8 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
                                 | std::views::transform(&PointShadowFrameBuffer::texture);
     TextureDrawBinding<CubeMap> pointShadows(units, pointShadowMaps);
     for (std::size_t i = 0; i < static_cast<std::size_t>(pointShadows.size()); ++i) {
-        shader.setTexture(std::format("pointLights[{}].shadow_map", i), pointShadows, i);
+        UniformName pointLightShadow("pointLights[{}].shadow_map", i);
+        shader.setTexture(pointLightShadow.view(), pointShadows, i);
     }
 
     shader.setMat4("dirLightSpaceMatrix", directionalLightSpace(lighting.directional).matrix());

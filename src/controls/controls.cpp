@@ -44,7 +44,7 @@ void SignalHandler::waitEvent() {
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (!SDL_GetRelativeMouseMode()) {
+                if (!mouseCaptured) {
                     emit(SignalCaptureRequested{});
                 }
                 break;

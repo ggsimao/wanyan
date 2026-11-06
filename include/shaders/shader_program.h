@@ -1,5 +1,6 @@
 #pragma once
 
+#include "shaders/uniform_cache.h"
 #include "textures/draw_binding.h"
 #include "scoped_binding.h"
 #include "shaders/shader.h"
@@ -42,7 +43,7 @@ public:
     GLuint id() const;
     // -1 if the program has no active uniform with that name; setting -1 is a
     // no-op. Every miss prints a warning naming the uniform and the program.
-    GLint uniformLocation(const std::string& name) const;
+    GLint uniformLocation(std::string_view name) const;
 
     void bind() const;
     static void clearBinding();
@@ -54,6 +55,7 @@ private:
 
     std::string _label;
     GLuint _id = 0;
+    UniformCache _cache;
 };
 
 // Puts a program in use for a scope and restores the previous one after.
@@ -63,29 +65,29 @@ public:
     explicit ShaderProgramBinding(const ShaderProgram& program)
         : ScopedBinding(program), _program(program) {}
 
-    void setBool(const std::string& name, bool value) const;
-    void setInt(const std::string& name, GLint value) const;
-    void setFloat(const std::string& name, GLfloat value) const;
-    void setVec3(const std::string& name, const glm::vec3& value) const;
-    void setVec4(const std::string& name, const glm::vec4& value) const;
-    void setMat3(const std::string& name, const glm::mat3& value) const;
-    void setMat4(const std::string& name, const glm::mat4& value) const;
+    void setBool(std::string_view name, bool value) const;
+    void setInt(std::string_view name, GLint value) const;
+    void setFloat(std::string_view name, GLfloat value) const;
+    void setVec3(std::string_view name, const glm::vec3& value) const;
+    void setVec4(std::string_view name, const glm::vec4& value) const;
+    void setMat3(std::string_view name, const glm::mat3& value) const;
+    void setMat4(std::string_view name, const glm::mat4& value) const;
 
     template <typename Texture>
-    void setTexture(const std::string& name, const TextureDrawBinding<Texture>& texture,
+    void setTexture(std::string_view name, const TextureDrawBinding<Texture>& texture,
                 std::size_t index = 0) const {
         setInt(name, texture.unit(index));
     }
-    void setMaterial(const std::string& name, const MaterialDrawBinding& material) const;
+    void setMaterial(std::string_view name, const MaterialDrawBinding& material) const;
 
     // Shadow maps aren't set here: bind them with a TextureDrawBinding and
     // pass it to setTexture(name + ".shadow_map", ...).
-    void setDirectionalLight(const std::string& name, const DirectionalLight& light) const;
-    void setPointLight(const std::string& name, const PointLight& light) const;
-    void setSpotlight(const std::string& name, const Spotlight& light) const;
+    void setDirectionalLight(std::string_view name, const DirectionalLight& light) const;
+    void setPointLight(std::string_view name, const PointLight& light) const;
+    void setSpotlight(std::string_view name, const Spotlight& light) const;
 
 private:
-    void setLightRadiance(const std::string& name, const Light& colors) const;
-    void setAttenuation(const std::string& name, const Attenuation& attenuation) const;
+    void setLightRadiance(std::string_view name, const Light& colors) const;
+    void setAttenuation(std::string_view name, const Attenuation& attenuation) const;
     const ShaderProgram& _program;
 };
