@@ -7,8 +7,11 @@
 #include <random>
 
 namespace {
+    static bool seeded = false;
+
     std::mt19937& engine() {
-        static std::mt19937 instance{std::random_device{}()};
+        assert(seeded && "RandomTransform::setSeed must be called before generating random values");
+        static std::mt19937 instance;
         return instance;
     }
 
@@ -31,6 +34,11 @@ namespace {
         }
     }
 }  // namespace
+
+void RandomTransform::setSeed(std::uint32_t seed) {
+    seeded = true;
+    engine().seed(seed);
+}
 
 RandomTransform::RandomTransform(float angularStep, float linearStep, unsigned angularRate,
                                  unsigned linearRate)

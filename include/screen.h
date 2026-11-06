@@ -19,6 +19,7 @@ struct ScreenParameters {
     glm::vec4 clearColor{0.0f};
     bool filterOn = false;
     bool msaaOn = false;
+    bool mirror = false;
     float gamma = DEFAULT_GAMMA;
 };
 

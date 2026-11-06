@@ -5,9 +5,14 @@ layout(location = 3) in mat4 aInstModel;
 layout(std140, binding = 0) uniform Matrices {
     mat4 modelMat;
     mat4 projViewMat;
-    mat4 normalMat;
 };
 
+uniform int excludedInstance = -1;
+
 void main() {
-    gl_Position = projViewMat * (modelMat * (aInstModel * vec4(aPos, 1.0)));
+    if (gl_InstanceID == excludedInstance) {
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // outside the clip volume
+    } else {
+        gl_Position = projViewMat * (modelMat * (aInstModel * vec4(aPos, 1.0)));
+    }
 }

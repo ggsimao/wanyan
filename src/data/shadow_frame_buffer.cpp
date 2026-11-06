@@ -4,7 +4,6 @@
 #include <glm/vec4.hpp>
 
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 ShadowFrameBuffer::ShadowFrameBuffer(GLsizei width, GLsizei height)

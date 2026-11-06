@@ -39,7 +39,6 @@ public:
 
         void attribPointer(GLuint index, GLint components, GLenum type, GLsizei stride,
                            std::size_t offset, GLboolean normalized = GL_FALSE);
-        void attribDivisor(GLuint index, GLuint divisor);
 
     private:
         friend class VertexArrayBinding;
@@ -65,8 +64,10 @@ public:
 
     void drawVertices(GLsizei count, GLenum mode) const;
     void drawVerticesInstanced(GLsizei count, GLenum mode, GLsizei instances) const;
-    void drawElements(GLsizei count, GLenum mode = GL_TRIANGLES) const;
-    void drawElementsInstanced(GLsizei count, GLsizei instances, GLenum mode = GL_TRIANGLES) const;
+    void drawElements(GLsizei count, GLenum mode = GL_TRIANGLES, GLsizei first = 0) const;
+    void drawElementsInstanced(GLsizei count, GLsizei instances, GLenum mode = GL_TRIANGLES, GLsizei first = 0) const;
+
+    void attribDivisor(GLuint index, GLuint divisor);
 
     [[nodiscard]] ArrayBufferBinding bindABO(const ArrayBuffer& abo);
     [[nodiscard]] ElementArrayBufferBinding bindEBO(const ElementArrayBuffer& ebo);

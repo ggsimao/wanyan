@@ -49,27 +49,49 @@ private:
     GLint _max = 0;
 };
 
-// Binds one texture (Texture2D, CubeMap or Texture2DMultisample) to its own unit.
+// Binds a sequence of textures (Texture2D, CubeMap or Texture2DMultisample) to their own consecutive units.
 template <typename Texture>
 class TextureDrawBinding {
 public:
     TextureDrawBinding(TextureUnits& units, const Texture& texture)
-        : _units(units), _unit(units.reserve(1)) {
-        glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(_unit));
+        : _units(units), _first(units.reserve(1)), _count(1) {
+        glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(_first));
         texture.bind();
     }
-    ~TextureDrawBinding() { _units.release(_unit, 1); }
+    // Several textures, bound to consecutive units: any sized range whose
+    // elements are textures, e.g. a view of the lights' shadow maps.
+    template <std::ranges::sized_range R>
+        requires std::convertible_to<std::ranges::range_reference_t<R>, const Texture&>
+    TextureDrawBinding(TextureUnits& units, R&& textures)
+        : _units(units),
+          _first(units.reserve(static_cast<GLint>(std::ranges::size(textures)))),
+          _count(static_cast<GLint>(std::ranges::size(textures))) {
+        GLint unit = _first;
+        for (const Texture& texture : textures) {
+            glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(unit++));
+            texture.bind();
+        }
+    }
+    ~TextureDrawBinding() { _units.release(_first, _count); }
 
     TextureDrawBinding(const TextureDrawBinding&) = delete;
     TextureDrawBinding& operator=(const TextureDrawBinding&) = delete;
     TextureDrawBinding(TextureDrawBinding&&) = delete;
     TextureDrawBinding& operator=(TextureDrawBinding&&) = delete;
 
-    GLint unit() const { return _unit; }
+    GLint unit(std::size_t i) const {
+        assert(static_cast<GLint>(i) < _count && "Texture index out of range");
+        return _first + static_cast<GLint>(i);
+    }
+
+    GLint size() const {
+        return _count;
+    }
 
 private:
     TextureUnits& _units;
-    GLint _unit;
+    GLint _first;
+    GLint _count;
 };
 
 // Binds all of a material's maps to a contiguous block of units:

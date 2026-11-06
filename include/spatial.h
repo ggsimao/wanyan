@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat3x3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/matrix.hpp>
 #include <glm/vec3.hpp>
 
 // Transform operations for anything with a model matrix.
@@ -21,6 +22,15 @@
 template <typename Derived>
 class Spatial {
 public:
+    glm::mat3 cofactorDetMatrix() const {
+        auto det = glm::determinant(self().model());
+        auto cofactor = glm::mat3(self().model());
+        if (det < 0) {
+            cofactor *= -1;
+        }
+        return cofactor;
+    }
+
     // For transforming normals: the inverse transpose of the model's
     // upper-left 3x3, which stays correct under non-uniform scaling.
     glm::mat3 normalMatrix() const {
