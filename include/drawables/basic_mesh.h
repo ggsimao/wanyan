@@ -17,9 +17,9 @@ public:
               Material material);
 
     // Centred on the origin. Flat-shaded: each face has its own vertices and normal.
-    static BasicMesh cube(float side, Material material = Material({}, {}, 1.0f));
+    static BasicMesh cube(float side, Material material = Material({}, {}, 1.0f, nullptr));
     // In the XY plane, centred on the origin, visible from both sides.
-    static BasicMesh square(float side, Material material = Material({}, {}, 1.0f));
+    static BasicMesh square(float side, Material material = Material({}, {}, 1.0f, nullptr));
 
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const override;
     void drawPlain(const ShaderProgramBinding& shader) const override;

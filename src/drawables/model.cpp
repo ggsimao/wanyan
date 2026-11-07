@@ -1,4 +1,5 @@
 #include "drawables/model.h"
+#include "drawables/vertex.h"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -23,7 +24,10 @@ namespace {
         std::vector<BasicMesh> load() && {
             Assimp::Importer importer;
             const aiScene* scene =
-                importer.ReadFile(_path.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
+                importer.ReadFile(
+                    _path.string(),
+                    aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals
+                );
             if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode) {
                 throw std::runtime_error(std::format("Couldn't load model {}: {}", _path.string(),
                                         importer.GetErrorString()));
@@ -47,6 +51,8 @@ namespace {
         }
 
         BasicMesh processMesh(const aiMesh& mesh, const aiScene& scene) {
+            assert(mesh.HasNormals() && "Import flags must include aiProcess_GenSmoothNormals");
+
             std::vector<Vertex> vertices;
             vertices.reserve(mesh.mNumVertices);
             const aiVector3D* texCoords = mesh.mTextureCoords[0];  // null if the mesh has none
@@ -54,15 +60,26 @@ namespace {
             for (unsigned i = 0; i < mesh.mNumVertices; ++i) {
                 const aiVector3D& p = mesh.mVertices[i];
                 Vertex vertex(glm::vec3(p.x, p.y, p.z));
-                if (mesh.HasNormals()) {
-                    const aiVector3D& n = mesh.mNormals[i];
-                    vertex.normal = glm::vec3(n.x, n.y, n.z);
+
+                const aiVector3D& n = mesh.mNormals[i];
+                vertex.normal = glm::vec3(n.x, n.y, n.z);
+
+                if (!mesh.HasTangentsAndBitangents()) {
+                    vertex.tangent = fallbackTangent(vertex.normal);
+                } else {
+                    glm::vec3 tang{
+                        mesh.mTangents[i].x, mesh.mTangents[i].y, mesh.mTangents[i].z,
+                    };
+                    glm::vec3 bitang{
+                        mesh.mBitangents[i].x, mesh.mBitangents[i].y, mesh.mBitangents[i].z,
+                    };
+                    vertex.tangent = packTangent(vertex.normal, tang, bitang);
                 }
                 if (texCoords) {
                     // Negated V, as in the Rust version, on top of aiProcess_FlipUVs
                     // and stb's vertical flip. The three flips together are what the
                     // shaders expect, so they're kept as they are.
-                    vertex.texCoords = glm::vec3(texCoords[i].x, -texCoords[i].y, 0.0f);
+                    vertex.texCoords = glm::vec2(texCoords[i].x, texCoords[i].y);
                 }
                 vertices.push_back(vertex);
             }
@@ -89,7 +106,7 @@ namespace {
                 specular.push_back(
                     colorTexture(material, AI_MATKEY_COLOR_SPECULAR, TextureType::SPECULAR));
             }
-            return Material(std::move(diffuse), std::move(specular), shininess(material));
+            return Material(std::move(diffuse), std::move(specular), shininess(material), nullptr);
         }
 
         std::vector<TexturePtr> loadTextures(const aiMaterial& material, aiTextureType aiType,

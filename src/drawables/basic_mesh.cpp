@@ -1,18 +1,23 @@
 #include "drawables/basic_mesh.h"
 
+#include "drawables/vertex.h"
 #include "textures/draw_binding.h"
 #include "drawables/geometry.h"
 #include "shaders/shader_program.h"
 
-#include <cstddef>
 #include <utility>
 
 BasicMesh::BasicMesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices,
                      Material material)
-    : _buffers(vertices, indices,
-               {{0, offsetof(Vertex, pos)},
-                {1, offsetof(Vertex, normal)},
-                {2, offsetof(Vertex, texCoords)}}),
+    : _buffers(
+        vertices,
+        indices,
+        {
+            VERTEX_ATTRIBUTES[0],
+            VERTEX_ATTRIBUTES[1],
+            VERTEX_ATTRIBUTES[2],
+            VERTEX_ATTRIBUTES[3],
+        }),
       _material(std::move(material)) {}
 
 BasicMesh BasicMesh::cube(float side, Material material) {

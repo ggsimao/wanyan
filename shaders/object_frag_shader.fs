@@ -3,6 +3,7 @@ in VERTEX {
     vec3 pos;
     vec3 normal;
     vec2 texCoords;
+    mat3 TBN;
     vec4 dirLightSpaceFragPos;
     vec4 spotlightSpaceFragPos;
 }
@@ -14,6 +15,7 @@ fs_in;
 struct Material {
     sampler2D diffuseTextures[NR_DIFFUSE_TEXTURES];
     sampler2D specularTextures[NR_SPECULAR_TEXTURES];
+    sampler2D normalTexture;
     float shininess;
     int loadedDiffuse;
     int loadedSpecular;
@@ -149,7 +151,7 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir,
 
     // float shadow = 0;
     float shadow = calculateShadowValue(fs_in.dirLightSpaceFragPos,
-                                        light.shadow_map, lightDir, normal);
+                                        light.shadow_map, lightDir, normalize(fs_in.normal));
 
     vec3 directional_value =
         calculateLightValue(diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -168,7 +170,7 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
     float attenuation = calculateAttenuation(light.position, fragPos, light.attenuation);
 
     // float shadow = 0;
-    float shadow = calculatePointShadowValue(light.shadow_map, light.position, normal);
+    float shadow = calculatePointShadowValue(light.shadow_map, light.position, normalize(fs_in.normal));
 
     vec3 pointlight_value =
         calculateLightValue(diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -193,7 +195,7 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
 
     // float shadow = 0;
     float shadow = calculateShadowValue(fs_in.spotlightSpaceFragPos,
-                                        light.shadow_map, lightDir, normal);
+                                        light.shadow_map, lightDir, normalize(fs_in.normal));
 
     vec3 spotlight_value =
         calculateLightValue(diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -204,7 +206,11 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
 
 void main() {
     vec3 viewDir = normalize(viewPos - fs_in.pos);
-    vec3 normal = normalize(fs_in.normal);
+    vec3 fragPos = fs_in.pos;
+
+    vec3 normal = texture(material.normalTexture, fs_in.texCoords).rgb;
+    normal = normal * 2.0 - 1.0;
+    normal = normalize(fs_in.TBN * normal);
 
     vec4 init_diff_tex = texture(material.diffuseTextures[0], fs_in.texCoords);
     vec4 init_spec_tex = texture(material.specularTextures[0], fs_in.texCoords);
@@ -229,13 +235,13 @@ void main() {
 
     for (int i = 0; i < NR_POINT_LIGHTS; i++) {
         vec3 pointlight_value =
-            calculatePointLight(pointLights[i], normal, fs_in.pos,
+            calculatePointLight(pointLights[i], normal, fragPos,
                                 viewDir, diff_tex_sum, spec_tex_sum);
         result += pointlight_value;
     }
 
     vec3 spotlight_value =
-        calculateSpotlight(spotlight, normal, fs_in.pos, viewDir,
+        calculateSpotlight(spotlight, normal, fragPos, viewDir,
                            diff_tex_sum, spec_tex_sum);
     result += spotlight_value;
 

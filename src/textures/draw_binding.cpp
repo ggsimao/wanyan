@@ -32,7 +32,8 @@ MaterialDrawBinding::MaterialDrawBinding(TextureUnits& units, const Material& ma
     : _units(units),
       _material(material),
       _diffuseCount(static_cast<GLint>(material.diffuseMaps().size())),
-      _count(_diffuseCount + static_cast<GLint>(material.specularMaps().size())),
+      _specularCount(static_cast<GLint>(material.specularMaps().size())),
+      _count(_diffuseCount + _specularCount + 1),
       _first(units.reserve(_count)) {
     GLint unit = _first;
     for (const TexturePtr& map : material.diffuseMaps()) {
@@ -41,6 +42,7 @@ MaterialDrawBinding::MaterialDrawBinding(TextureUnits& units, const Material& ma
     for (const TexturePtr& map : material.specularMaps()) {
         bindToUnit(unit++, *map);
     }
+    bindToUnit(unit++, *material.normalMap());
 }
 
 MaterialDrawBinding::~MaterialDrawBinding() {
@@ -59,4 +61,8 @@ GLint MaterialDrawBinding::diffuseUnit(std::size_t i) const {
 GLint MaterialDrawBinding::specularUnit(std::size_t i) const {
     assert(static_cast<GLint>(i) < _count - _diffuseCount && "Specular map index out of range");
     return _first + _diffuseCount + static_cast<GLint>(i);
+}
+
+GLint MaterialDrawBinding::normalUnit() const {
+    return _first + _diffuseCount + _specularCount;
 }
