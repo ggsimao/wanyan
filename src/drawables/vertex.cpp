@@ -1,4 +1,4 @@
-#include <drawables/vertex.h>
+#include "drawables/vertex.h"
 
 namespace {
     // Below this, a tangent's direction is mostly rounding error.
@@ -31,12 +31,10 @@ glm::vec4 packTangent(const glm::vec3& normal, const glm::vec3& tangent,
     return glm::vec4(tangent / length, w);
 }
 
+bool isValidTangent(const glm::vec4& tangent) {
+    const float length = glm::length(glm::vec3(tangent));
+    return std::isfinite(length) && std::abs(length - 1.0f) < 1e-3f
+        && (tangent.w == 1.0f || tangent.w == -1.0f);
+}
+
 Vertex::Vertex(const glm::vec3& pos) : pos(pos), normal(glm::vec3(0.0f)), texCoords(glm::vec3(0.0f)) {}
-
-void Vertex::translate(const glm::vec3& offset) {
-    pos += offset;
-}
-
-void Vertex::rotate(float angle, const glm::vec3& axis) {
-    pos = glm::vec3(glm::rotate(glm::mat4(1.0f), angle, axis) * glm::vec4(pos, 0.0f));
-}

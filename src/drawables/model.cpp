@@ -1,11 +1,15 @@
 #include "drawables/model.h"
 #include "drawables/vertex.h"
+#include "textures/helpers.h"
+#include "textures/texture_2d.h"
 
 #include <assimp/Importer.hpp>
+#include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
 #include <format>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -26,7 +30,7 @@ namespace {
             const aiScene* scene =
                 importer.ReadFile(
                     _path.string(),
-                    aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals
+                    aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_TransformUVCoords
                 );
             if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode) {
                 throw std::runtime_error(std::format("Couldn't load model {}: {}", _path.string(),
@@ -67,18 +71,20 @@ namespace {
                 if (!mesh.HasTangentsAndBitangents()) {
                     vertex.tangent = fallbackTangent(vertex.normal);
                 } else {
-                    glm::vec3 tang{
+                    const glm::vec3 tang{
                         mesh.mTangents[i].x, mesh.mTangents[i].y, mesh.mTangents[i].z,
                     };
-                    glm::vec3 bitang{
+                    const glm::vec3 bitang{
                         mesh.mBitangents[i].x, mesh.mBitangents[i].y, mesh.mBitangents[i].z,
                     };
                     vertex.tangent = packTangent(vertex.normal, tang, bitang);
                 }
                 if (texCoords) {
-                    // Negated V, as in the Rust version, on top of aiProcess_FlipUVs
-                    // and stb's vertical flip. The three flips together are what the
-                    // shaders expect, so they're kept as they are.
+                    // As stored in the file; only stb's vertical flip on image load remains.
+                    // aiProcess_FlipUVs and a negated V used to be applied here as well, but
+                    // they cancelled out: 1 - v, negated, is v - 1, which GL_REPEAT samples
+                    // like v. Keeping the file's own V also keeps Assimp's bitangents pointing
+                    // the way the shaders' V grows, which the tangents' handedness relies on.
                     vertex.texCoords = glm::vec2(texCoords[i].x, texCoords[i].y);
                 }
                 vertices.push_back(vertex);
@@ -106,7 +112,21 @@ namespace {
                 specular.push_back(
                     colorTexture(material, AI_MATKEY_COLOR_SPECULAR, TextureType::SPECULAR));
             }
-            return Material(std::move(diffuse), std::move(specular), shininess(material), nullptr);
+            TexturePtr normal = loadFirstTexture(material, aiTextureType_NORMALS, TextureType::NORMAL);
+            return Material(std::move(diffuse), std::move(specular), shininess(material), std::move(normal));
+        }
+
+        TexturePtr loadFirstTexture(const aiMaterial& material, aiTextureType aiType, TextureType type) {
+            auto count = material.GetTextureCount(aiType);
+            if (count == 0) {
+                return nullptr;
+            }
+            if (count > 1) {
+                std::cerr << "Only one texture of type " << aiType << " taken, when there were " << count << "!\n";
+            }
+            aiString file;
+            material.GetTexture(aiType, 0, &file);
+            return texture((_directory / file.C_Str()).lexically_normal(), type);
         }
 
         std::vector<TexturePtr> loadTextures(const aiMaterial& material, aiTextureType aiType,

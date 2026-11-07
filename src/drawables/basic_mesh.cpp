@@ -13,20 +13,20 @@ BasicMesh::BasicMesh(const std::vector<Vertex>& vertices, const std::vector<GLui
         vertices,
         indices,
         {
-            VERTEX_ATTRIBUTES[0],
-            VERTEX_ATTRIBUTES[1],
-            VERTEX_ATTRIBUTES[2],
-            VERTEX_ATTRIBUTES[3],
+            VERTEX_ATTRIBUTES[POS_LOCATION],
+            VERTEX_ATTRIBUTES[NORMAL_LOCATION],
+            VERTEX_ATTRIBUTES[TEX_COORDS_LOCATION],
+            VERTEX_ATTRIBUTES[TANGENT_LOCATION],
         }),
       _material(std::move(material)) {}
 
-BasicMesh BasicMesh::cube(float side, Material material) {
-    const Geometry cube = cubeGeometry(side);
+BasicMesh BasicMesh::cube(float side, Material material, glm::vec2 texture_scale) {
+    const Geometry cube = cubeGeometry(side, texture_scale);
     return BasicMesh(cube.vertices, cube.indices, std::move(material));
 }
 
-BasicMesh BasicMesh::square(float side, Material material) {
-    const Geometry square = squareGeometry(side);
+BasicMesh BasicMesh::square(float side, Material material, glm::vec2 texture_scale) {
+    const Geometry square = squareGeometry(side, texture_scale);
     return BasicMesh(square.vertices, square.indices, std::move(material));
 }
 

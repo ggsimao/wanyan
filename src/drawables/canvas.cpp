@@ -11,8 +11,8 @@ namespace {
         // The screen shader reads texture coordinates at location 1, not 2.
         return MeshBuffers(quad.vertices, quad.indices,
                         {
-                            VERTEX_ATTRIBUTES[0],
-                            VERTEX_ATTRIBUTES[2]
+                            VERTEX_ATTRIBUTES[POS_LOCATION],
+                            VERTEX_ATTRIBUTES[TEX_COORDS_LOCATION]
                         });
     }
 }  // namespace
