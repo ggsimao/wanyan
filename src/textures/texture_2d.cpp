@@ -18,6 +18,7 @@ namespace {
     using StbiPixels = std::unique_ptr<unsigned char, StbiDeleter>;
 
     inline constexpr unsigned char EMPTY_DATA[4] = {0, 0, 0, 0};
+    inline constexpr unsigned char FLAT_NORMAL_DATA[4] = {128, 128, 255, 255};
 
     unsigned char toByte(const float& value) {
         return static_cast<unsigned char>(
@@ -113,6 +114,23 @@ TexturePtr Texture2D::empty() {
     return shared;
 }
 
+TexturePtr Texture2D::flatNormal() {
+    // Shared by whoever holds it; deleted when the last holder lets go.
+    static std::weak_ptr<const Texture2D> cache;
+    if (auto existing = cache.lock()) {
+        return existing;
+    }
+
+    Texture2D texture(TextureType::NORMAL);
+    {
+        Texture2DBinding tex(texture);
+        tex.image(GL_RGBA8, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, FLAT_NORMAL_DATA);
+    }
+    auto shared = std::make_shared<const Texture2D>(std::move(texture));
+    cache = shared;
+    return shared;
+}
+
 GLuint Texture2D::id() const {
     return _id;
 }
@@ -126,6 +144,7 @@ GLenum Texture2D::internalFormat() const {
         case TextureType::DIFFUSE:    return GL_SRGB8_ALPHA8;  // colour: stored as sRGB, sampled as linear
         case TextureType::SPECULAR:   return GL_RGBA8;         // data: read as-is
         case TextureType::ATTACHMENT: return GL_RGBA8;
+        case TextureType::NORMAL:     return GL_RGBA8;
     }
     return GL_RGBA8;  // unreachable; keeps -Wreturn-type quiet
 }

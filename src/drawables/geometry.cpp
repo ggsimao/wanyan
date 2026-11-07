@@ -18,9 +18,53 @@ namespace {
             geometry.vertices[firstVertex + corner].normal = normal;
         }
     }
+
+    constexpr float DEGENERATE_EPSILON = 1e-8f;
+
+    // Must run after normals are set.
+    void assignTangents(Geometry& geometry) {
+        const auto& vertices = geometry.vertices;
+        const auto& indices = geometry.indices;
+        auto i_len = indices.size();
+        assert(i_len % 3 == 0);
+        for (std::size_t tri = 0; tri < i_len; tri+=3) {
+            const Vertex& v1 = vertices[indices[tri]];
+            const Vertex& v2 = vertices[indices[tri + 1]];
+            const Vertex& v3 = vertices[indices[tri + 2]];
+            const glm::vec3 e1 = v2.pos - v1.pos;
+            const glm::vec3 e2 = v3.pos - v1.pos;
+            const glm::vec2 dUV1 = v2.texCoords - v1.texCoords;
+            const glm::vec2 dUV2 = v3.texCoords - v1.texCoords;
+            const float det = dUV1.x * dUV2.y - dUV2.x * dUV1.y;
+            glm::vec4 tangent;
+            if (glm::abs(det) < DEGENERATE_EPSILON) {
+                tangent = fallbackTangent(v1.normal);
+            } else {
+                const float f = 1.0f / det;
+
+                glm::vec3 t{
+                    f * (dUV2.y * e1.x - dUV1.y * e2.x),
+                    f * (dUV2.y * e1.y - dUV1.y * e2.y),
+                    f * (dUV2.y * e1.z - dUV1.y * e2.z)
+                };
+
+                glm::vec3 b{
+                    f * (-dUV2.x * e1.x + dUV1.x * e2.x),
+                    f * (-dUV2.x * e1.y + dUV1.x * e2.y),
+                    f * (-dUV2.x * e1.z + dUV1.x * e2.z)
+                };
+
+                tangent = packTangent(v1.normal, t, b);
+            }
+
+            geometry.vertices[indices[tri]].tangent = tangent;
+            geometry.vertices[indices[tri + 1]].tangent = tangent;
+            geometry.vertices[indices[tri + 2]].tangent = tangent;
+        }
+    }
 }  // namespace
 
-Geometry cubeGeometry(float side) {
+Geometry cubeGeometry(float side, glm::vec2 texture_scale) {
     const float h = side / 2.0f;
     // Four vertices per face, in the same order as the Rust version so
     // windings and texture coordinates match.
@@ -55,13 +99,16 @@ Geometry cubeGeometry(float side) {
             const std::size_t column = corner % 2;
             const std::size_t row = corner / 2;
             cube.vertices[face * 4 + corner].texCoords =
-                glm::vec3(static_cast<float>(column), static_cast<float>(row), 0.0f);
+                glm::vec2(static_cast<float>(column), static_cast<float>(row)) * texture_scale;
         }
     }
+
+    assignTangents(cube);
+
     return cube;
 }
 
-Geometry squareGeometry(float side) {
+Geometry squareGeometry(float side, glm::vec2 texture_scale) {
     const float h = side / 2.0f;
     // The same four corners twice: once facing +Z, once facing -Z.
     Geometry square{
@@ -81,13 +128,16 @@ Geometry squareGeometry(float side) {
             const std::size_t column = corner % 2;
             const std::size_t row = corner / 2;
             square.vertices[face * 4 + corner].texCoords =
-                glm::vec3(static_cast<float>(column), static_cast<float>(1 - row), 0.0f);
+                glm::vec2(static_cast<float>(column), static_cast<float>(1 - row)) * texture_scale;
         }
     }
+
+    assignTangents(square);
+
     return square;
 }
 
-Geometry quadGeometry(float side) {
+Geometry quadGeometry(float side, glm::vec2 texture_scale) {
     const float h = side / 2.0f;
     Geometry quad{
         {Vertex({-h, h, 0.0f}), Vertex({h, h, 0.0f}), Vertex({-h, -h, 0.0f}), Vertex({h, -h, 0.0f})},
@@ -99,7 +149,10 @@ Geometry quadGeometry(float side) {
         const std::size_t column = corner % 2;
         const std::size_t row = corner / 2;
         quad.vertices[corner].texCoords =
-            glm::vec3(static_cast<float>(column), static_cast<float>(1 - row), 0.0f);
+            glm::vec2(static_cast<float>(column), static_cast<float>(1 - row)) * texture_scale;
     }
+
+    assignTangents(quad);
+
     return quad;
 }

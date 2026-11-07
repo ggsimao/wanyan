@@ -1,7 +1,7 @@
 #version 430 core
 #extension GL_ARB_shader_viewport_layer_array : require // this is for optimizing point shadows but it's not always present
 layout(location = 0) in vec3 aPos;
-layout(location = 3) in mat4 aInstModel;
+layout(location = 4) in mat4 aInstModel;
 
 layout(std140, binding = 0) uniform Matrices {
     mat4 modelMat;

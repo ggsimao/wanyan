@@ -26,6 +26,7 @@ public:
     static Texture2D fromColor(TextureType type, const glm::vec3& color);
     // A shared 1x1 transparent black texture, for materials without maps.
     static TexturePtr empty();
+    static TexturePtr flatNormal();
 
     GLuint id() const;
     TextureType type() const;

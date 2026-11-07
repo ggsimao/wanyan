@@ -99,8 +99,9 @@ void PointShadowFrameBuffer::allocateDepthTexture() {
     for (size_t i = 0; i < 6; i++) {
         tex.image(i, GL_DEPTH_COMPONENT24, _width, _height, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
     }
-    tex.setFilters(GL_NEAREST, GL_NEAREST);
+    tex.setFilters(GL_LINEAR, GL_LINEAR);
     tex.setWrapping(GL_CLAMP_TO_EDGE);
+    tex.setDepthComparison();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -14,11 +14,11 @@ struct Geometry {
 
 // Centred on the origin. Flat-shaded: four vertices per face, each face with
 // its own normal; texture coordinates span each face.
-Geometry cubeGeometry(float side);
+Geometry cubeGeometry(float side, glm::vec2 texture_scale = {1.0, 1.0});
 
 // In the XY plane, centred on the origin, with a front (+Z) and a back (-Z) face.
-Geometry squareGeometry(float side);
+Geometry squareGeometry(float side, glm::vec2 texture_scale = {1.0, 1.0});
 
 // Like squareGeometry, but front face only. quadGeometry(2.0f) covers
 // clip space exactly, for fullscreen passes.
-Geometry quadGeometry(float side);
+Geometry quadGeometry(float side, glm::vec2 texture_scale = {1.0, 1.0});

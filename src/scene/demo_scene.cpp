@@ -58,6 +58,7 @@ namespace {
     constexpr const char* WINDOW_TEXTURE = "resources/textures/window_diff.png";
     constexpr const char* WINDOW_SPECULAR = "resources/textures/window_spec.png";
     constexpr const char* WOOD_TEXTURE = "resources/textures/wood.jpg";
+    constexpr const char* WOOD_NORMAL_MAP = "resources/textures/wood_normal.png";
     constexpr const char* ROCK_MODEL = "resources/models/rocks/rock.obj";
 
     // Not used yet; kept for later. Commented out because unused constants
@@ -142,7 +143,7 @@ namespace {
     SceneObject buildBox() {
         Material material({texture(TextureType::DIFFUSE, CONTAINER_TEXTURE, GL_CLAMP_TO_EDGE)},
                           {texture(TextureType::SPECULAR, CONTAINER_SPECULAR, GL_CLAMP_TO_EDGE)},
-                          8.0f);
+                          8.0f, nullptr);
         SceneObject box(BasicMesh::cube(1.0f, std::move(material)));
         box.setOutlineColor({0.5f, 0.2f, 0.3f});
         box.enableOutline(true);
@@ -152,7 +153,7 @@ namespace {
     SceneObject buildWindow() {
         Material material({texture(TextureType::DIFFUSE, WINDOW_TEXTURE, GL_CLAMP_TO_EDGE)},
                           {texture(TextureType::SPECULAR, WINDOW_SPECULAR, GL_CLAMP_TO_EDGE)},
-                          8.0f);
+                          8.0f, nullptr);
         SceneObject window(BasicMesh::square(1.0f, std::move(material)));
         window.setTransparent(true);
         window.translate({0.0f, 1.5f, -1.5f});
@@ -162,7 +163,7 @@ namespace {
     // One small glowing cube per point light, at the light's position.
     SceneObject buildLamps(const std::vector<PointLight>& lights) {
         Material material({texture(TextureType::DIFFUSE, LAMP_TEXTURE, GL_CLAMP_TO_EDGE)}, {},
-                          32.0f);
+                          32.0f, nullptr);
         SceneObject lamps(BasicMesh::cube(1.0f, std::move(material)));
         if (lights.size() > 1) {
             lamps.addInstances(lights.size() - 1);
@@ -175,7 +176,12 @@ namespace {
     }
 
     SceneObject buildFloor() {
-        Material material({texture(TextureType::DIFFUSE, WOOD_TEXTURE, GL_REPEAT)}, {}, 16.0f);
+        Material material(
+            {texture(TextureType::DIFFUSE, WOOD_TEXTURE, GL_REPEAT)},
+            {},
+            16.0f,
+            texture(TextureType::NORMAL, WOOD_NORMAL_MAP, GL_REPEAT)
+        );
         SceneObject floor(BasicMesh::square(10.0f, std::move(material)));
         floor.rotate(-glm::half_pi<float>(), {1.0f, 0.0f, 0.0f});
         floor.translate({0.0f, -1.5f, 0.0f});

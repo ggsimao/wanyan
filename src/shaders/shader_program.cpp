@@ -165,6 +165,8 @@ void ShaderProgramBinding::setMaterial(std::string_view name,
         UniformName specular("{}.specularTextures[{}]", name, i);
         setInt(specular.view(), material.specularUnit(i));
     }
+    UniformName normal("{}.normalTexture", name);
+    setInt(normal.view(), material.normalUnit());
     UniformName shininess("{}.shininess", name);
     setFloat(shininess.view(), m.shininess());
     // Material guarantees at least one map of each kind, so these are >= 1.

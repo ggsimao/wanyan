@@ -51,4 +51,10 @@ public:
     void setFilters(GLenum minFilter, GLenum magFilter);
     void setWrapping(GLenum wrapping);
     void setWrappingOnAxis(GLenum axis, GLenum wrapping);
+    // Makes the texture compare instead of returning depths: sampled through a
+    // shadow sampler (samplerCubeShadow), each texel's stored depth is compared
+    // with the reference using `function`, giving 1 where it passes and 0 where
+    // it fails. With GL_LINEAR filtering, the results of the 4 nearest texels are
+    // blended, which smooths shadow edges.
+    void setDepthComparison(GLenum function = GL_LEQUAL);
 };
