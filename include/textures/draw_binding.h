@@ -109,12 +109,14 @@ public:
     const Material& material() const;
     GLint diffuseUnit(std::size_t i) const;
     GLint specularUnit(std::size_t i) const;
+    GLint normalUnit() const;
 
 private:
     // Declaration order matters: _first is initialized from _count.
     TextureUnits& _units;
     const Material& _material;
     GLint _diffuseCount;
+    GLint _specularCount;
     GLint _count;
     GLint _first;
 };

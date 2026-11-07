@@ -2,13 +2,16 @@
 
 #include "data/buffer.h"
 #include "data/vertex_array.h"
+#include "drawables/vertex.h"
 #include "scene/instance.h"
 #include <map>
+#include <ranges>
 #include <tuple>
+#include <variant>
 #include <vector>
 
 namespace {
-    constexpr GLuint MODEL_LOCATION = 3;   // mat4: 4 consecutive vec4 locations
+    constexpr GLuint MODEL_LOCATION = VERTEX_ATTRIBUTES.size();   // mat4: 4 consecutive vec4 locations
     constexpr GLuint MODEL_COLUMNS = 4;
     constexpr GLuint NORMAL_LOCATION = MODEL_LOCATION + MODEL_COLUMNS;  // mat3: 3 consecutive vec3 locations
     constexpr GLuint NORMAL_COLUMNS = 3;
@@ -58,18 +61,27 @@ namespace {
         VertexArrayBinding& _vao;
         GLsizei _layers;
     };
+
+    template<typename Field>
+    void uploadAttribute(
+        const std::vector<Vertex>& vertices, Field Vertex::* member, size_t location, VertexArrayBinding::ArrayBufferBinding&& abo
+    ) {
+        assert(location < VERTEX_ATTRIBUTES.size());
+        auto view = vertices | std::views::transform(member);
+        std::vector<Field> attrVector(view.begin(), view.end());
+        abo.bufferData(attrVector, GL_STATIC_DRAW);
+        abo.attribPointer(location, Field::length(), GL_FLOAT, 0, 0);
+    }
 }
 
 MeshBuffers::MeshBuffers(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices,
                          std::initializer_list<VertexAttribute> attributes)
     : _indexCount(static_cast<GLsizei>(indices.size())), _vertexCount(static_cast<GLsizei>(vertices.size())) {
     VertexArrayBinding vao(_vao);
-    {
-        auto abo = vao.bindABO(_abo);
-        abo.bufferData(vertices, GL_STATIC_DRAW);
-        for (const VertexAttribute& attribute : attributes) {
-            abo.attribPointer(attribute.location, 3, GL_FLOAT, sizeof(Vertex), attribute.offset);
-        }
+    for (const VertexAttribute& attribute : attributes) {
+        std::visit([&](auto member) {
+            uploadAttribute(vertices, member, attribute.location, vao.bindABO(_streams[attribute.location]));
+        }, attribute.member);
     }
     auto ebo = vao.bindEBO(_ebo);
     ebo.bufferData(combinedIndices(vertices, indices), GL_STATIC_DRAW);

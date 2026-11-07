@@ -6,16 +6,9 @@
 
 #include <GL/glew.h>
 
-#include <cstddef>
+#include <array>
 #include <initializer_list>
 #include <vector>
-
-// One vertex attribute read from Vertex: its shader location and the offset
-// of the field it reads. Every Vertex field is a vec3, so the format is fixed.
-struct VertexAttribute {
-    GLuint location;
-    std::size_t offset;  // offsetof(Vertex, ...)
-};
 
 // The GPU side of an indexed mesh: VAO, vertex buffer and index buffer,
 // set up once on construction. Shared by BasicMesh, Skybox and Canvas.
@@ -39,7 +32,7 @@ public:
 
 private:
     VertexArray _vao;
-    ArrayBuffer _abo;
+    std::array<ArrayBuffer, VERTEX_ATTRIBUTES.size()> _streams;
     ElementArrayBuffer _ebo;
     GLsizei _indexCount, _vertexCount;
 };

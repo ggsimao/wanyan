@@ -4,4 +4,5 @@ enum class TextureType {
     DIFFUSE,
     SPECULAR,
     ATTACHMENT,
+    NORMAL,
 };
