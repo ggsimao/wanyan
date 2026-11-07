@@ -1,10 +1,15 @@
 #include "drawables/model.h"
+#include "drawables/vertex.h"
+#include "textures/helpers.h"
+#include "textures/texture_2d.h"
 
 #include <assimp/Importer.hpp>
+#include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
 #include <format>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -23,7 +28,10 @@ namespace {
         std::vector<BasicMesh> load() && {
             Assimp::Importer importer;
             const aiScene* scene =
-                importer.ReadFile(_path.string(), aiProcess_Triangulate | aiProcess_FlipUVs);
+                importer.ReadFile(
+                    _path.string(),
+                    aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_TransformUVCoords
+                );
             if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) || !scene->mRootNode) {
                 throw std::runtime_error(std::format("Couldn't load model {}: {}", _path.string(),
                                         importer.GetErrorString()));
@@ -47,6 +55,8 @@ namespace {
         }
 
         BasicMesh processMesh(const aiMesh& mesh, const aiScene& scene) {
+            assert(mesh.HasNormals() && "Import flags must include aiProcess_GenSmoothNormals");
+
             std::vector<Vertex> vertices;
             vertices.reserve(mesh.mNumVertices);
             const aiVector3D* texCoords = mesh.mTextureCoords[0];  // null if the mesh has none
@@ -54,15 +64,28 @@ namespace {
             for (unsigned i = 0; i < mesh.mNumVertices; ++i) {
                 const aiVector3D& p = mesh.mVertices[i];
                 Vertex vertex(glm::vec3(p.x, p.y, p.z));
-                if (mesh.HasNormals()) {
-                    const aiVector3D& n = mesh.mNormals[i];
-                    vertex.normal = glm::vec3(n.x, n.y, n.z);
+
+                const aiVector3D& n = mesh.mNormals[i];
+                vertex.normal = glm::vec3(n.x, n.y, n.z);
+
+                if (!mesh.HasTangentsAndBitangents()) {
+                    vertex.tangent = fallbackTangent(vertex.normal);
+                } else {
+                    const glm::vec3 tang{
+                        mesh.mTangents[i].x, mesh.mTangents[i].y, mesh.mTangents[i].z,
+                    };
+                    const glm::vec3 bitang{
+                        mesh.mBitangents[i].x, mesh.mBitangents[i].y, mesh.mBitangents[i].z,
+                    };
+                    vertex.tangent = packTangent(vertex.normal, tang, bitang);
                 }
                 if (texCoords) {
-                    // Negated V, as in the Rust version, on top of aiProcess_FlipUVs
-                    // and stb's vertical flip. The three flips together are what the
-                    // shaders expect, so they're kept as they are.
-                    vertex.texCoords = glm::vec3(texCoords[i].x, -texCoords[i].y, 0.0f);
+                    // As stored in the file; only stb's vertical flip on image load remains.
+                    // aiProcess_FlipUVs and a negated V used to be applied here as well, but
+                    // they cancelled out: 1 - v, negated, is v - 1, which GL_REPEAT samples
+                    // like v. Keeping the file's own V also keeps Assimp's bitangents pointing
+                    // the way the shaders' V grows, which the tangents' handedness relies on.
+                    vertex.texCoords = glm::vec2(texCoords[i].x, texCoords[i].y);
                 }
                 vertices.push_back(vertex);
             }
@@ -89,7 +112,21 @@ namespace {
                 specular.push_back(
                     colorTexture(material, AI_MATKEY_COLOR_SPECULAR, TextureType::SPECULAR));
             }
-            return Material(std::move(diffuse), std::move(specular), shininess(material));
+            TexturePtr normal = loadFirstTexture(material, aiTextureType_NORMALS, TextureType::NORMAL);
+            return Material(std::move(diffuse), std::move(specular), shininess(material), std::move(normal));
+        }
+
+        TexturePtr loadFirstTexture(const aiMaterial& material, aiTextureType aiType, TextureType type) {
+            auto count = material.GetTextureCount(aiType);
+            if (count == 0) {
+                return nullptr;
+            }
+            if (count > 1) {
+                std::cerr << "Only one texture of type " << aiType << " taken, when there were " << count << "!\n";
+            }
+            aiString file;
+            material.GetTexture(aiType, 0, &file);
+            return texture((_directory / file.C_Str()).lexically_normal(), type);
         }
 
         std::vector<TexturePtr> loadTextures(const aiMaterial& material, aiTextureType aiType,

@@ -6,19 +6,14 @@
 
 #include <GL/glew.h>
 
-#include <cstddef>
+#include <array>
 #include <initializer_list>
 #include <vector>
 
-// One vertex attribute read from Vertex: its shader location and the offset
-// of the field it reads. Every Vertex field is a vec3, so the format is fixed.
-struct VertexAttribute {
-    GLuint location;
-    std::size_t offset;  // offsetof(Vertex, ...)
-};
-
-// The GPU side of an indexed mesh: VAO, vertex buffer and index buffer,
-// set up once on construction. Shared by BasicMesh, Skybox and Canvas.
+// The GPU side of an indexed mesh: a VAO, one vertex buffer per attribute
+// (so passes that read only positions, like shadows, fetch nothing else), and
+// an index buffer, set up once on construction. Shared by BasicMesh, Skybox
+// and Canvas.
 class MeshBuffers {
 public:
     MeshBuffers(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices,
@@ -31,15 +26,16 @@ public:
     void drawVerticesInstanced(GLsizei instances) const;
     void drawPositionsInstanced(GLsizei instances, GLsizei layers) const;
 
-    // Reads per-instance model and normal matrices (see Instance) from the
-    // given buffer, at attribute locations 3-9.
+    // Reads per-instance model and normal matrices (see Instance) from the given
+    // buffer, at the locations right after the vertex attributes: the model
+    // matrix at 4-7, the normal matrix at 8-10.
     void setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const;
 
     GLsizei indexCount() const;
 
 private:
     VertexArray _vao;
-    ArrayBuffer _abo;
+    std::array<ArrayBuffer, VERTEX_ATTRIBUTES.size()> _streams;
     ElementArrayBuffer _ebo;
     GLsizei _indexCount, _vertexCount;
 };

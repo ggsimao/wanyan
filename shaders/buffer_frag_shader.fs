@@ -3,6 +3,7 @@ in VERTEX {
     vec3 pos;
     vec3 normal;
     vec2 texCoords;
+    mat3 TBN;
     vec4 dirLightSpaceFragPos;
     vec4 spotlightSpaceFragPos;
 }
@@ -16,6 +17,7 @@ out vec4 fragColor;
 struct Material {
     sampler2D diffuseTextures[NR_DIFFUSE_TEXTURES];
     sampler2D specularTextures[NR_SPECULAR_TEXTURES];
+    sampler2D normalTexture;
     float shininess;
     int loadedDiffuse;
     int loadedSpecular;

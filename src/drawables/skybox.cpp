@@ -1,10 +1,10 @@
 #include "drawables/skybox.h"
 
+#include "drawables/vertex.h"
 #include "textures/draw_binding.h"
 #include "drawables/geometry.h"
 #include "shaders/shader_program.h"
 
-#include <cstddef>
 #include <utility>
 
 namespace {
@@ -12,7 +12,7 @@ namespace {
         const Geometry cube = cubeGeometry(size);
         // The skybox shader only reads positions: the direction from the centre
         // is the cube map lookup vector.
-        return MeshBuffers(cube.vertices, cube.indices, {{0, offsetof(Vertex, pos)}});
+        return MeshBuffers(cube.vertices, cube.indices, {VERTEX_ATTRIBUTES[POS_LOCATION]});
     }
 }  // namespace
 

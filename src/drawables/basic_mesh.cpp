@@ -1,27 +1,32 @@
 #include "drawables/basic_mesh.h"
 
+#include "drawables/vertex.h"
 #include "textures/draw_binding.h"
 #include "drawables/geometry.h"
 #include "shaders/shader_program.h"
 
-#include <cstddef>
 #include <utility>
 
 BasicMesh::BasicMesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices,
                      Material material)
-    : _buffers(vertices, indices,
-               {{0, offsetof(Vertex, pos)},
-                {1, offsetof(Vertex, normal)},
-                {2, offsetof(Vertex, texCoords)}}),
+    : _buffers(
+        vertices,
+        indices,
+        {
+            VERTEX_ATTRIBUTES[POS_LOCATION],
+            VERTEX_ATTRIBUTES[NORMAL_LOCATION],
+            VERTEX_ATTRIBUTES[TEX_COORDS_LOCATION],
+            VERTEX_ATTRIBUTES[TANGENT_LOCATION],
+        }),
       _material(std::move(material)) {}
 
-BasicMesh BasicMesh::cube(float side, Material material) {
-    const Geometry cube = cubeGeometry(side);
+BasicMesh BasicMesh::cube(float side, Material material, glm::vec2 texture_scale) {
+    const Geometry cube = cubeGeometry(side, texture_scale);
     return BasicMesh(cube.vertices, cube.indices, std::move(material));
 }
 
-BasicMesh BasicMesh::square(float side, Material material) {
-    const Geometry square = squareGeometry(side);
+BasicMesh BasicMesh::square(float side, Material material, glm::vec2 texture_scale) {
+    const Geometry square = squareGeometry(side, texture_scale);
     return BasicMesh(square.vertices, square.indices, std::move(material));
 }
 

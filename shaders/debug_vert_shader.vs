@@ -1,9 +1,8 @@
 #version 430 core
 layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec3 aNormal;
-layout(location = 2) in vec2 aTexCoord;
-layout(location = 3) in mat4 aInstModel;
-layout(location = 7) in mat3 aInstNormal;
+layout(location = 4) in mat4 aInstModel;
+layout(location = 8) in mat3 aInstNormal;
 
 layout(std140, binding = 0) uniform Matrices {
     mat4 modelMat;
