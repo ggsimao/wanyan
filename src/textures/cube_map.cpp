@@ -121,3 +121,9 @@ void CubeMapBinding::setWrappingOnAxis(GLenum axis, GLenum wrapping) {
     assertActive();
     glTexParameteri(GL_TEXTURE_CUBE_MAP, axis, static_cast<GLint>(wrapping));
 }
+
+void CubeMapBinding::setDepthComparison(GLenum function) {
+    assertActive();
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_COMPARE_MODE, function);
+}

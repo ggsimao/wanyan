@@ -126,8 +126,8 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
         PointLightSpace pointSpaces = pointLightSpaces(lamp);
         for (size_t i = 0; i < FACES; ++i)
             pointShader.setMat4(std::format("shadowMatrices[{}]", i), pointSpaces.matrix(i));
-        pointShader.setVec3("lightPos", lamp.position);
-        pointShader.setFloat("farPlane", FAR_PLANE);
+        // pointShader.setVec3("lightPos", lamp.position);
+        // pointShader.setFloat("farPlane", FAR_PLANE);
         drawShadowCasters(scene, pointShader, lamp.fixtureIndices, _shaders.pointShadow.layers());
     }
 }
@@ -235,6 +235,7 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
     shader.setMat4("dirLightSpaceMatrix", directionalLightSpace(lighting.directional).matrix());
     shader.setMat4("spotlightSpaceMatrix", spotlightSpace(lighting.spotlight).matrix());
+    shader.setFloat("pointShadowNearPlane", NEAR_PLANE);
     shader.setFloat("pointShadowFarPlane", FAR_PLANE);
 
     const auto drawObject = [&](const SceneObject* object) {

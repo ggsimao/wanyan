@@ -35,12 +35,12 @@ namespace {
             const glm::vec3 e2 = v3.pos - v1.pos;
             const glm::vec2 dUV1 = v2.texCoords - v1.texCoords;
             const glm::vec2 dUV2 = v3.texCoords - v1.texCoords;
-            float det = dUV1.x * dUV2.y - dUV2.x * dUV1.y;
+            const float det = dUV1.x * dUV2.y - dUV2.x * dUV1.y;
             glm::vec4 tangent;
             if (glm::abs(det) < DEGENERATE_EPSILON) {
                 tangent = fallbackTangent(v1.normal);
             } else {
-                float f = 1.0f / det;
+                const float f = 1.0f / det;
 
                 glm::vec3 t{
                     f * (dUV2.y * e1.x - dUV1.y * e2.x),
@@ -64,7 +64,7 @@ namespace {
     }
 }  // namespace
 
-Geometry cubeGeometry(float side) {
+Geometry cubeGeometry(float side, glm::vec2 texture_scale) {
     const float h = side / 2.0f;
     // Four vertices per face, in the same order as the Rust version so
     // windings and texture coordinates match.
@@ -99,7 +99,7 @@ Geometry cubeGeometry(float side) {
             const std::size_t column = corner % 2;
             const std::size_t row = corner / 2;
             cube.vertices[face * 4 + corner].texCoords =
-                glm::vec2(static_cast<float>(column), static_cast<float>(row));
+                glm::vec2(static_cast<float>(column), static_cast<float>(row)) * texture_scale;
         }
     }
 
@@ -108,7 +108,7 @@ Geometry cubeGeometry(float side) {
     return cube;
 }
 
-Geometry squareGeometry(float side) {
+Geometry squareGeometry(float side, glm::vec2 texture_scale) {
     const float h = side / 2.0f;
     // The same four corners twice: once facing +Z, once facing -Z.
     Geometry square{
@@ -128,7 +128,7 @@ Geometry squareGeometry(float side) {
             const std::size_t column = corner % 2;
             const std::size_t row = corner / 2;
             square.vertices[face * 4 + corner].texCoords =
-                glm::vec2(static_cast<float>(column), static_cast<float>(1 - row));
+                glm::vec2(static_cast<float>(column), static_cast<float>(1 - row)) * texture_scale;
         }
     }
 
@@ -137,7 +137,7 @@ Geometry squareGeometry(float side) {
     return square;
 }
 
-Geometry quadGeometry(float side) {
+Geometry quadGeometry(float side, glm::vec2 texture_scale) {
     const float h = side / 2.0f;
     Geometry quad{
         {Vertex({-h, h, 0.0f}), Vertex({h, h, 0.0f}), Vertex({-h, -h, 0.0f}), Vertex({h, -h, 0.0f})},
@@ -149,7 +149,7 @@ Geometry quadGeometry(float side) {
         const std::size_t column = corner % 2;
         const std::size_t row = corner / 2;
         quad.vertices[corner].texCoords =
-            glm::vec2(static_cast<float>(column), static_cast<float>(1 - row));
+            glm::vec2(static_cast<float>(column), static_cast<float>(1 - row)) * texture_scale;
     }
 
     assignTangents(quad);

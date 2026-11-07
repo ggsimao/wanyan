@@ -40,7 +40,7 @@ struct PointLight {
 
     Attenuation attenuation;
 
-    samplerCube shadow_map;
+    samplerCubeShadow shadow_map;
 };
 
 struct Spotlight {
@@ -76,27 +76,40 @@ uniform vec3 ambientColor;
 
 uniform vec3 viewPos;
 
-uniform float pointShadowFarPlane;
+uniform float pointShadowNearPlane, pointShadowFarPlane;
 
 uniform Material material;
 
 out vec4 fragColor;
 
-float calculatePointShadowValue(samplerCube shadowMap, vec3 lightPos, vec3 normal) {
+// The depth the hardware stores for a point `axisDistance` away along a cube
+// face's axis, with that face's perspective projection. Window space, 0 to 1.
+float cubeFaceDepth(float axisDistance, float near, float far) {
+    float ndc = (far + near) / (far - near)
+              - (2.0 * far * near) / ((far - near) * axisDistance);
+    return ndc * 0.5 + 0.5;
+}
+
+float calculatePointShadowValue(samplerCubeShadow shadowMap, vec3 lightPos, vec3 normal) {
     vec3 fragToLight = fs_in.pos - lightPos;
 
-    float closestDepth = texture(shadowMap, fragToLight).r;
-
-    closestDepth *= pointShadowFarPlane;
-
-    float currentDepth = length(fragToLight);
-
+    // Your existing bias, unchanged: still in world units.
     float faceSize = textureSize(shadowMap, 0).x;
     float texelWorld = 2.0 * length(fragToLight) / faceSize;
     float cosTheta = max(dot(normal, normalize(-fragToLight)), 0.0);
     float shadowBias = texelWorld * (MIN_BIAS_TEXELS + SLOPE_BIAS_TEXELS * (1.0 - cosTheta));
-    float shadow = currentDepth - shadowBias > closestDepth ? 1.0 : 0.0;
-    return shadow;
+
+    // The face's depth is the distance along its axis: the largest component,
+    // which is also what picks the face.
+    vec3 a = abs(fragToLight);
+    float axisDistance = max(a.x, max(a.y, a.z));
+    float reference = cubeFaceDepth(axisDistance - shadowBias,
+                                    pointShadowNearPlane, pointShadowFarPlane);
+
+    // The hardware compares `reference` with the stored depths: 1 where lit,
+    // 0 where shadowed, and blends across the 4 nearest texels at edges.
+    float lit = texture(shadowMap, vec4(fragToLight, reference));
+    return 1.0 - lit;
 }
 
 float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
