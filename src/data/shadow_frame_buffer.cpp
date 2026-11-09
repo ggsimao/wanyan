@@ -9,7 +9,8 @@
 ShadowFrameBuffer::ShadowFrameBuffer(GLsizei width, GLsizei height)
     : _texture(TextureType::ATTACHMENT), _width(width), _height(height) {
     glGenFramebuffers(1, &_id);
-    if (_id == 0) throw std::runtime_error("Couldn't make a shadow framebuffer");
+    if (_id == 0)
+        throw std::runtime_error("Couldn't make a shadow framebuffer");
 
     allocateDepthTexture();
 
@@ -28,18 +29,17 @@ ShadowFrameBuffer::ShadowFrameBuffer(GLsizei width, GLsizei height)
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         release();
-        throw std::runtime_error(std::format("Could not complete shadow framebuffer (status {})",
-                                 status));
+        throw std::runtime_error(std::format(
+            "Could not complete shadow framebuffer (status {})", status));
     }
 }
 
-ShadowFrameBuffer::ShadowFrameBuffer(ShadowFrameBuffer&& other) noexcept
-    : _texture(std::move(other._texture)),
-      _id(std::exchange(other._id, 0)),
-      _width(other._width),
-      _height(other._height) {}
+ShadowFrameBuffer::ShadowFrameBuffer(ShadowFrameBuffer &&other) noexcept
+    : _texture(std::move(other._texture)), _id(std::exchange(other._id, 0)),
+      _width(other._width), _height(other._height) {}
 
-ShadowFrameBuffer& ShadowFrameBuffer::operator=(ShadowFrameBuffer&& other) noexcept {
+ShadowFrameBuffer &
+ShadowFrameBuffer::operator=(ShadowFrameBuffer &&other) noexcept {
     if (this != &other) {
         release();
         _texture = std::move(other._texture);
@@ -50,9 +50,7 @@ ShadowFrameBuffer& ShadowFrameBuffer::operator=(ShadowFrameBuffer&& other) noexc
     return *this;
 }
 
-ShadowFrameBuffer::~ShadowFrameBuffer() {
-    release();
-}
+ShadowFrameBuffer::~ShadowFrameBuffer() { release(); }
 
 void ShadowFrameBuffer::release() noexcept {
     if (_id != 0) {
@@ -61,21 +59,13 @@ void ShadowFrameBuffer::release() noexcept {
     }
 }
 
-GLuint ShadowFrameBuffer::id() const {
-    return _id;
-}
+GLuint ShadowFrameBuffer::id() const { return _id; }
 
-GLsizei ShadowFrameBuffer::width() const {
-    return _width;
-}
+GLsizei ShadowFrameBuffer::width() const { return _width; }
 
-GLsizei ShadowFrameBuffer::height() const {
-    return _height;
-}
+GLsizei ShadowFrameBuffer::height() const { return _height; }
 
-const Texture2D& ShadowFrameBuffer::texture() const {
-    return _texture;
-}
+const Texture2D &ShadowFrameBuffer::texture() const { return _texture; }
 
 void ShadowFrameBuffer::bindDraw() const {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _id);
@@ -95,16 +85,18 @@ void ShadowFrameBuffer::clearReadBinding() {
 
 void ShadowFrameBuffer::allocateDepthTexture() {
     Texture2DBinding tex(_texture);
-    tex.image(GL_DEPTH_COMPONENT24, _width, _height, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    tex.image(GL_DEPTH_COMPONENT24, _width, _height, GL_DEPTH_COMPONENT,
+              GL_FLOAT, nullptr);
     tex.setFilters(GL_LINEAR, GL_LINEAR);
     // Outside the light's frustum, depth reads as 1.0 (farthest): no shadow.
     tex.setWrapping(GL_CLAMP_TO_BORDER);
     tex.setBorderColor(glm::vec4(1.0f));
+    tex.enableDepthComparison();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ShadowDrawBinding::ShadowDrawBinding(const ShadowFrameBuffer& sfbo)
+ShadowDrawBinding::ShadowDrawBinding(const ShadowFrameBuffer &sfbo)
     : ShadowDrawBindingBase(sfbo) {
     glGetIntegerv(GL_VIEWPORT, _previousViewport);
     glViewport(0, 0, sfbo.width(), sfbo.height());
@@ -116,10 +108,10 @@ ShadowDrawBinding::~ShadowDrawBinding() {
                _previousViewport[3]);
 }
 
-void ShadowDrawBinding::attachDepth(const Texture2D& texture) {
+void ShadowDrawBinding::attachDepth(const Texture2D &texture) {
     assertActive();
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                           texture.id(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+                           GL_TEXTURE_2D, texture.id(), 0);
 }
 
 void ShadowDrawBinding::disableDrawBuffer() {
