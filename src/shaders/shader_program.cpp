@@ -9,14 +9,15 @@
 #include <stdexcept>
 #include <utility>
 
-ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
-                             const FragmentShader& fragment)
+ShaderProgram::ShaderProgram(std::string label, const VertexShader &vertex,
+                             const FragmentShader &fragment)
     : _label(std::move(label)) {
     link({vertex.id(), fragment.id()});
 }
 
-ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
-                             const GeometryShader& geometry, const FragmentShader& fragment)
+ShaderProgram::ShaderProgram(std::string label, const VertexShader &vertex,
+                             const GeometryShader &geometry,
+                             const FragmentShader &fragment)
     : _label(std::move(label)) {
     link({vertex.id(), geometry.id(), fragment.id()});
 }
@@ -24,7 +25,8 @@ ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
 void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
     _id = glCreateProgram();
     if (_id == 0) {
-        throw std::runtime_error(std::format("Couldn't make shader program \"{}\"", _label));
+        throw std::runtime_error(
+            std::format("Couldn't make shader program \"{}\"", _label));
     }
 
     for (GLuint shader : shaders) {
@@ -43,7 +45,8 @@ void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
         // Called from a constructor, which won't run the destructor on throw.
         const std::string log = infoLog();
         release();
-        throw std::runtime_error(std::format("Program \"{}\" link error: {}", _label, log));
+        throw std::runtime_error(
+            std::format("Program \"{}\" link error: {}", _label, log));
     }
 
     // Names the program in GL's own debug messages and in graphics debuggers.
@@ -51,24 +54,27 @@ void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
     glObjectLabel(GL_PROGRAM, _id, -1, _label.c_str());
 }
 
-ShaderProgram ShaderProgram::fromFiles(std::string label, const std::filesystem::path& vertex,
-                                       const std::filesystem::path& fragment) {
+ShaderProgram ShaderProgram::fromFiles(std::string label,
+                                       const std::filesystem::path &vertex,
+                                       const std::filesystem::path &fragment) {
     return ShaderProgram(std::move(label), VertexShader::fromFile(vertex),
                          FragmentShader::fromFile(fragment));
 }
 
-ShaderProgram ShaderProgram::fromFiles(std::string label, const std::filesystem::path& vertex,
-                                       const std::filesystem::path& geometry,
-                                       const std::filesystem::path& fragment) {
+ShaderProgram ShaderProgram::fromFiles(std::string label,
+                                       const std::filesystem::path &vertex,
+                                       const std::filesystem::path &geometry,
+                                       const std::filesystem::path &fragment) {
     return ShaderProgram(std::move(label), VertexShader::fromFile(vertex),
-                         GeometryShader::fromFile(geometry), FragmentShader::fromFile(fragment));
+                         GeometryShader::fromFile(geometry),
+                         FragmentShader::fromFile(fragment));
 }
 
-ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept : _label(std::move(other._label)),
-                                                               _id(std::exchange(other._id, 0)),
-                                                               _cache(std::move(other._cache)) {}
+ShaderProgram::ShaderProgram(ShaderProgram &&other) noexcept
+    : _label(std::move(other._label)), _id(std::exchange(other._id, 0)),
+      _cache(std::move(other._cache)) {}
 
-ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
+ShaderProgram &ShaderProgram::operator=(ShaderProgram &&other) noexcept {
     if (this != &other) {
         release();
         _label = std::move(other._label);
@@ -78,9 +84,7 @@ ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
     return *this;
 }
 
-ShaderProgram::~ShaderProgram() {
-    release();
-}
+ShaderProgram::~ShaderProgram() { release(); }
 
 void ShaderProgram::release() noexcept {
     if (_id != 0) {
@@ -89,21 +93,15 @@ void ShaderProgram::release() noexcept {
     }
 }
 
-GLuint ShaderProgram::id() const {
-    return _id;
-}
+GLuint ShaderProgram::id() const { return _id; }
 
 GLint ShaderProgram::uniformLocation(std::string_view name) const {
     return _cache.uniformLocation(name, _label, _id);
 }
 
-void ShaderProgram::bind() const {
-    glUseProgram(_id);
-}
+void ShaderProgram::bind() const { glUseProgram(_id); }
 
-void ShaderProgram::clearBinding() {
-    glUseProgram(0);
-}
+void ShaderProgram::clearBinding() { glUseProgram(0); }
 
 std::string ShaderProgram::infoLog() const {
     GLint length = 0;
@@ -126,34 +124,42 @@ void ShaderProgramBinding::setInt(std::string_view name, GLint value) const {
     glUniform1i(_program.uniformLocation(name), value);
 }
 
-void ShaderProgramBinding::setFloat(std::string_view name, GLfloat value) const {
+void ShaderProgramBinding::setFloat(std::string_view name,
+                                    GLfloat value) const {
     assertActive();
     glUniform1f(_program.uniformLocation(name), value);
 }
 
-void ShaderProgramBinding::setVec3(std::string_view name, const glm::vec3& value) const {
+void ShaderProgramBinding::setVec3(std::string_view name,
+                                   const glm::vec3 &value) const {
     assertActive();
     glUniform3f(_program.uniformLocation(name), value.x, value.y, value.z);
 }
 
-void ShaderProgramBinding::setVec4(std::string_view name, const glm::vec4& value) const {
+void ShaderProgramBinding::setVec4(std::string_view name,
+                                   const glm::vec4 &value) const {
     assertActive();
-    glUniform4f(_program.uniformLocation(name), value.x, value.y, value.z, value.w);
+    glUniform4f(_program.uniformLocation(name), value.x, value.y, value.z,
+                value.w);
 }
 
-void ShaderProgramBinding::setMat3(std::string_view name, const glm::mat3& value) const {
+void ShaderProgramBinding::setMat3(std::string_view name,
+                                   const glm::mat3 &value) const {
     assertActive();
-    glUniformMatrix3fv(_program.uniformLocation(name), 1, GL_FALSE, &value[0][0]);
+    glUniformMatrix3fv(_program.uniformLocation(name), 1, GL_FALSE,
+                       &value[0][0]);
 }
 
-void ShaderProgramBinding::setMat4(std::string_view name, const glm::mat4& value) const {
+void ShaderProgramBinding::setMat4(std::string_view name,
+                                   const glm::mat4 &value) const {
     assertActive();
-    glUniformMatrix4fv(_program.uniformLocation(name), 1, GL_FALSE, &value[0][0]);
+    glUniformMatrix4fv(_program.uniformLocation(name), 1, GL_FALSE,
+                       &value[0][0]);
 }
 
-void ShaderProgramBinding::setMaterial(std::string_view name,
-                                       const MaterialDrawBinding& material) const {
-    const Material& m = material.material();
+void ShaderProgramBinding::setMaterial(
+    std::string_view name, const MaterialDrawBinding &material) const {
+    const Material &m = material.material();
     const std::size_t diffuseCount = m.diffuseMaps().size();
     const std::size_t specularCount = m.specularMaps().size();
 
@@ -165,10 +171,21 @@ void ShaderProgramBinding::setMaterial(std::string_view name,
         UniformName specular("{}.specularTextures[{}]", name, i);
         setInt(specular.view(), material.specularUnit(i));
     }
+
     UniformName normal("{}.normalTexture", name);
     setInt(normal.view(), material.normalUnit());
+    UniformName depth("{}.depthTexture", name);
+    setInt(depth.view(), material.depthUnit());
+
     UniformName shininess("{}.shininess", name);
     setFloat(shininess.view(), m.shininess());
+    UniformName heightScale("{}.heightScale", name);
+    setFloat(heightScale.view(), m.heightScale());
+    UniformName clipParallaxEdges("{}.clipParallaxEdges", name);
+    setBool(clipParallaxEdges.view(), m.clipParallaxEdges());
+    UniformName hasNormalMap("{}.hasNormalMap", name);
+    setBool(hasNormalMap.view(), m.hasNormalMap());
+
     // Material guarantees at least one map of each kind, so these are >= 1.
     UniformName loadedDiffuse("{}.loadedDiffuse", name);
     UniformName loadedSpecular("{}.loadedSpecular", name);
@@ -176,21 +193,23 @@ void ShaderProgramBinding::setMaterial(std::string_view name,
     setInt(loadedSpecular.view(), static_cast<GLint>(specularCount));
 }
 
-void ShaderProgramBinding::setDirectionalLight(std::string_view name,
-                                               const DirectionalLight& light) const {
+void ShaderProgramBinding::setDirectionalLight(
+    std::string_view name, const DirectionalLight &light) const {
     UniformName direction("{}.direction", name);
     setVec3(direction.view(), light.direction);
     setLightRadiance(name, light);
 }
 
-void ShaderProgramBinding::setPointLight(std::string_view name, const PointLight& light) const {
+void ShaderProgramBinding::setPointLight(std::string_view name,
+                                         const PointLight &light) const {
     UniformName position("{}.position", name);
     setVec3(position.view(), light.position);
     setAttenuation(name, light.attenuation);
     setLightRadiance(name, light);
 }
 
-void ShaderProgramBinding::setSpotlight(std::string_view name, const Spotlight& light) const {
+void ShaderProgramBinding::setSpotlight(std::string_view name,
+                                        const Spotlight &light) const {
     UniformName position("{}.position", name);
     UniformName direction("{}.direction", name);
     setVec3(position.view(), light.position);
@@ -205,13 +224,13 @@ void ShaderProgramBinding::setSpotlight(std::string_view name, const Spotlight& 
 }
 
 void ShaderProgramBinding::setLightRadiance(std::string_view name,
-                                          const Light& color) const {
+                                            const Light &color) const {
     UniformName radiance("{}.radiance", name);
     setVec3(radiance.view(), color.effectiveRadiance());
 }
 
-void ShaderProgramBinding::setAttenuation(std::string_view name,
-                                          const Attenuation& attenuation) const {
+void ShaderProgramBinding::setAttenuation(
+    std::string_view name, const Attenuation &attenuation) const {
     UniformName constant("{}.attenuation.constant", name);
     UniformName linear("{}.attenuation.linear", name);
     UniformName quadratic("{}.attenuation.quadratic", name);

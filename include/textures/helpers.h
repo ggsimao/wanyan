@@ -5,4 +5,5 @@ enum class TextureType {
     SPECULAR,
     ATTACHMENT,
     NORMAL,
+    DEPTH,  // parallax depth map: white is deepest
 };
