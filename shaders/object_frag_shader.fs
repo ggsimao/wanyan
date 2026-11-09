@@ -35,7 +35,7 @@ struct DirLight {
     vec3 direction;
     vec3 radiance;
 
-    sampler2D shadow_map;
+    sampler2DShadow shadow_map;
 };
 
 struct PointLight {
@@ -57,7 +57,7 @@ struct Spotlight {
     float phiCos;
     float gammaCos;
 
-    sampler2D shadow_map;
+    sampler2DShadow shadow_map;
 };
 
 layout(std140, binding = 0) uniform Matrices {
@@ -169,7 +169,7 @@ float calculatePointShadowValue(samplerCubeShadow shadowMap, vec3 lightPos,
     return 1.0 - lit;
 }
 
-float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
+float calculateShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
                            vec3 lightDir, vec3 normal) {
     vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
 
@@ -184,9 +184,11 @@ float calculateShadowValue(vec4 fragPosLightSpace, sampler2D shadowMap,
     int kernel_half = (PCF_KERNEL_SIZE - 1) / 2;
     for (int x = -kernel_half; x <= kernel_half; ++x) {
         for (int y = -kernel_half; y <= kernel_half; ++y) {
-            float pcfDepth =
-                texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
-            shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
+            vec2 offset = vec2(x, y) * texelSize;
+            // 1 where lit, 0 where shadowed, blended across 4 texels at edges.
+            float lit = texture(shadowMap, vec3(projCoords.xy + offset,
+                                                currentDepth - shadowBias));
+            shadow += 1.0 - lit;
         }
     }
     shadow /= PCF_KERNEL_SIZE * PCF_KERNEL_SIZE;
