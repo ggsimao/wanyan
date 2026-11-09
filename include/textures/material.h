@@ -9,8 +9,8 @@ struct MaterialParameters {
     std::vector<TexturePtr> spec = {};
     TexturePtr normalMap = nullptr;
     TexturePtr depthMap = nullptr;
-    float shininess = 32.0f;
-    float heightScale = 0.05f;
+    float shininess = 0.0f;
+    float heightScale = 0.0f;
     bool clipParallaxEdges = false;
 };
 
@@ -20,8 +20,8 @@ class Material {
   public:
     Material(MaterialParameters params);
 
-    const std::vector<TexturePtr> &diffuseMaps() const;
-    const std::vector<TexturePtr> &specularMaps() const;
+    const std::vector<TexturePtr>& diffuseMaps() const;
+    const std::vector<TexturePtr>& specularMaps() const;
     const TexturePtr normalMap() const;
     const TexturePtr depthMap() const;
     float shininess() const;
