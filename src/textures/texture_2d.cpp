@@ -11,19 +11,22 @@
 #include <utility>
 
 namespace {
-    // Owns the pixels returned by stbi_load and frees them however the scope ends.
+    // Owns the pixels returned by stbi_load and frees them however the scope
+    // ends.
     struct StbiDeleter {
-        void operator()(unsigned char* pixels) const { stbi_image_free(pixels); }
+        void operator()(unsigned char *pixels) const {
+            stbi_image_free(pixels);
+        }
     };
     using StbiPixels = std::unique_ptr<unsigned char, StbiDeleter>;
 
     inline constexpr unsigned char EMPTY_DATA[4] = {0, 0, 0, 0};
     inline constexpr unsigned char FLAT_NORMAL_DATA[4] = {128, 128, 255, 255};
+    inline constexpr unsigned char FLAT_DEPTH_DATA[1] = {0};
 
-    unsigned char toByte(const float& value) {
+    unsigned char toByte(const float &value) {
         return static_cast<unsigned char>(
-            std::lround(std::clamp(value, 0.0f, 1.0f) * 255.0f)
-        );
+            std::lround(std::clamp(value, 0.0f, 1.0f) * 255.0f));
     }
 }  // namespace
 
@@ -31,20 +34,23 @@ namespace {
 
 Texture2D::Texture2D(TextureType type) : _type(type) {
     glGenTextures(1, &_id);
-    if (_id == 0) throw std::runtime_error("Couldn't make a texture");
+    if (_id == 0)
+        throw std::runtime_error("Couldn't make a texture");
 }
 
-Texture2D::Texture2D(TextureType type, const std::filesystem::path& path, GLenum wrapping)
+Texture2D::Texture2D(TextureType type, const std::filesystem::path &path,
+                     GLenum wrapping)
     : Texture2D(type) {
     load(path);
     Texture2DBinding tex(*this);
     tex.setWrapping(wrapping);
+    tex.setFilters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 }
 
-Texture2D::Texture2D(Texture2D&& other) noexcept
+Texture2D::Texture2D(Texture2D &&other) noexcept
     : _id(std::exchange(other._id, 0)), _type(other._type) {}
 
-Texture2D& Texture2D::operator=(Texture2D&& other) noexcept {
+Texture2D &Texture2D::operator=(Texture2D &&other) noexcept {
     if (this != &other) {
         release();
         _id = std::exchange(other._id, 0);
@@ -53,9 +59,7 @@ Texture2D& Texture2D::operator=(Texture2D&& other) noexcept {
     return *this;
 }
 
-Texture2D::~Texture2D() {
-    release();
-}
+Texture2D::~Texture2D() { release(); }
 
 void Texture2D::release() noexcept {
     if (_id != 0) {
@@ -64,22 +68,40 @@ void Texture2D::release() noexcept {
     }
 }
 
-void Texture2D::load(const std::filesystem::path& path) {
+void Texture2D::load(const std::filesystem::path &path) {
     int width = 0, height = 0, channels = 0;
     stbi_set_flip_vertically_on_load(1);
-    StbiPixels data(stbi_load(path.string().c_str(), &width, &height, &channels, 0));
+    StbiPixels data(
+        stbi_load(path.string().c_str(), &width, &height, &channels, 0));
     if (!data) {
-        throw std::runtime_error(std::format("Couldn't load texture: {}", path.string()));
+        throw std::runtime_error(
+            std::format("Couldn't load texture: {}", path.string()));
     }
 
-    const GLenum format = channels == 4 ? GL_RGBA : GL_RGB;
+    GLenum format = GL_RGBA;
+    switch (channels) {
+        case 1:
+            format = GL_RED;
+            break;
+        case 2:
+            format = GL_RG;
+            break;
+        case 3:
+            format = GL_RGB;
+            break;
+        case 4:
+            format = GL_RGBA;
+            break;
+        default:
+            assert(false && "stb returned an unexpected channel count");
+    }
     Texture2DBinding tex(*this);
     tex.image(static_cast<GLint>(internalFormat()), width, height, format,
               GL_UNSIGNED_BYTE, data.get());
     tex.generateMipmap();
 }
 
-Texture2D Texture2D::fromColor(TextureType type, const glm::vec3& color) {
+Texture2D Texture2D::fromColor(TextureType type, const glm::vec3 &color) {
     Texture2D texture(type);
     const unsigned char data[4] = {
         toByte(color.r),
@@ -107,7 +129,8 @@ TexturePtr Texture2D::empty() {
     Texture2D texture(TextureType::ATTACHMENT);
     {
         Texture2DBinding tex(texture);
-        tex.image(GL_RGBA8, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, EMPTY_DATA);
+        tex.image(texture.internalFormat(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
+                  EMPTY_DATA);
     }
     auto shared = std::make_shared<const Texture2D>(std::move(texture));
     cache = shared;
@@ -124,45 +147,65 @@ TexturePtr Texture2D::flatNormal() {
     Texture2D texture(TextureType::NORMAL);
     {
         Texture2DBinding tex(texture);
-        tex.image(GL_RGBA8, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, FLAT_NORMAL_DATA);
+        tex.image(texture.internalFormat(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
+                  FLAT_NORMAL_DATA);
     }
     auto shared = std::make_shared<const Texture2D>(std::move(texture));
     cache = shared;
     return shared;
 }
 
-GLuint Texture2D::id() const {
-    return _id;
+TexturePtr Texture2D::flatDepth() {
+    // Shared by whoever holds it; deleted when the last holder lets go.
+    static std::weak_ptr<const Texture2D> cache;
+    if (auto existing = cache.lock()) {
+        return existing;
+    }
+
+    Texture2D texture(TextureType::DEPTH);
+    {
+        Texture2DBinding tex(texture);
+        tex.image(texture.internalFormat(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
+                  FLAT_DEPTH_DATA);
+    }
+    auto shared = std::make_shared<const Texture2D>(std::move(texture));
+    cache = shared;
+    return shared;
 }
 
-TextureType Texture2D::type() const {
-    return _type;
-}
+GLuint Texture2D::id() const { return _id; }
+
+TextureType Texture2D::type() const { return _type; }
 
 GLenum Texture2D::internalFormat() const {
     switch (_type) {
-        case TextureType::DIFFUSE:    return GL_SRGB8_ALPHA8;  // colour: stored as sRGB, sampled as linear
-        case TextureType::SPECULAR:   return GL_RGBA8;         // data: read as-is
-        case TextureType::ATTACHMENT: return GL_RGBA8;
-        case TextureType::NORMAL:     return GL_RGBA8;
+        case TextureType::DIFFUSE:
+            return GL_SRGB8_ALPHA8;  // colour: stored as sRGB, sampled as
+                                     // linear
+        case TextureType::SPECULAR:
+            return GL_RGBA8;  // data: read as-is
+        case TextureType::ATTACHMENT:
+            return GL_RGBA8;
+        case TextureType::NORMAL:
+            return GL_RGBA8;
+        case TextureType::DEPTH:
+            return GL_R8;
     }
     return GL_RGBA8;  // unreachable; keeps -Wreturn-type quiet
 }
 
-void Texture2D::bind() const {
-    glBindTexture(GL_TEXTURE_2D, _id);
-}
+void Texture2D::bind() const { glBindTexture(GL_TEXTURE_2D, _id); }
 
-void Texture2D::clearBinding() {
-    glBindTexture(GL_TEXTURE_2D, 0);
-}
+void Texture2D::clearBinding() { glBindTexture(GL_TEXTURE_2D, 0); }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Texture2DBinding::image(GLint internalFormat, GLsizei width, GLsizei height,
-                             GLenum format, GLenum type, const void* data) {
+void Texture2DBinding::image(GLint internalFormat, GLsizei width,
+                             GLsizei height, GLenum format, GLenum type,
+                             const void *data) {
     assertActive();
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
+                 type, data);
 }
 
 void Texture2DBinding::generateMipmap() {
@@ -172,14 +215,18 @@ void Texture2DBinding::generateMipmap() {
 
 void Texture2DBinding::setFilters(GLenum minFilter, GLenum magFilter) {
     assertActive();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(minFilter));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(magFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    static_cast<GLint>(minFilter));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    static_cast<GLint>(magFilter));
 }
 
 void Texture2DBinding::setWrapping(GLenum wrapping) {
     assertActive();
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapping));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapping));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                    static_cast<GLint>(wrapping));
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                    static_cast<GLint>(wrapping));
 }
 
 void Texture2DBinding::setWrappingOnAxis(GLenum axis, GLenum wrapping) {
@@ -187,7 +234,7 @@ void Texture2DBinding::setWrappingOnAxis(GLenum axis, GLenum wrapping) {
     glTexParameteri(GL_TEXTURE_2D, axis, static_cast<GLint>(wrapping));
 }
 
-void Texture2DBinding::setBorderColor(const glm::vec4& color) {
+void Texture2DBinding::setBorderColor(const glm::vec4 &color) {
     assertActive();
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &color[0]);
 }
