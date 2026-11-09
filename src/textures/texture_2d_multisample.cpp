@@ -3,18 +3,21 @@
 #include <stdexcept>
 #include <utility>
 
-Texture2DMultisample::Texture2DMultisample(GLsizei samples, GLenum internalFormat)
+Texture2DMultisample::Texture2DMultisample(GLsizei samples,
+                                           GLenum internalFormat)
     : _samples(samples), _internalFormat(internalFormat) {
     glGenTextures(1, &_id);
-    if (_id == 0) throw std::runtime_error("Couldn't make a multisample texture");
+    if (_id == 0)
+        throw std::runtime_error("Couldn't make a multisample texture");
 }
 
-Texture2DMultisample::Texture2DMultisample(Texture2DMultisample&& other) noexcept
-    : _id(std::exchange(other._id, 0)),
-      _samples(other._samples),
+Texture2DMultisample::Texture2DMultisample(
+    Texture2DMultisample&& other) noexcept
+    : _id(std::exchange(other._id, 0)), _samples(other._samples),
       _internalFormat(other._internalFormat) {}
 
-Texture2DMultisample& Texture2DMultisample::operator=(Texture2DMultisample&& other) noexcept {
+Texture2DMultisample&
+Texture2DMultisample::operator=(Texture2DMultisample&& other) noexcept {
     if (this != &other) {
         release();
         _id = std::exchange(other._id, 0);
@@ -24,9 +27,7 @@ Texture2DMultisample& Texture2DMultisample::operator=(Texture2DMultisample&& oth
     return *this;
 }
 
-Texture2DMultisample::~Texture2DMultisample() {
-    release();
-}
+Texture2DMultisample::~Texture2DMultisample() { release(); }
 
 void Texture2DMultisample::release() noexcept {
     if (_id != 0) {
@@ -43,17 +44,11 @@ void Texture2DMultisample::createTexture(GLsizei width, GLsizei height) {
     tex.storage(_samples, _internalFormat, width, height, GL_TRUE);
 }
 
-GLuint Texture2DMultisample::id() const {
-    return _id;
-}
+GLuint Texture2DMultisample::id() const { return _id; }
 
-GLsizei Texture2DMultisample::samples() const {
-    return _samples;
-}
+GLsizei Texture2DMultisample::samples() const { return _samples; }
 
-GLenum Texture2DMultisample::internalFormat() const {
-    return _internalFormat;
-}
+GLenum Texture2DMultisample::internalFormat() const { return _internalFormat; }
 
 void Texture2DMultisample::bind() const {
     glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, _id);
@@ -65,9 +60,11 @@ void Texture2DMultisample::clearBinding() {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Texture2DMultisampleBinding::storage(GLsizei samples, GLenum internalFormat, GLsizei width,
-                                          GLsizei height, GLboolean fixedSampleLocations) {
+void Texture2DMultisampleBinding::storage(GLsizei samples,
+                                          GLenum internalFormat, GLsizei width,
+                                          GLsizei height,
+                                          GLboolean fixedSampleLocations) {
     assertActive();
-    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat, width, height,
-                            fixedSampleLocations);
+    glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, internalFormat,
+                            width, height, fixedSampleLocations);
 }

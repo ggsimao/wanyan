@@ -15,8 +15,9 @@
 // an index buffer, set up once on construction. Shared by BasicMesh, Skybox
 // and Canvas.
 class MeshBuffers {
-public:
-    MeshBuffers(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices,
+  public:
+    MeshBuffers(const std::vector<Vertex>& vertices,
+                const std::vector<GLuint>& indices,
                 std::initializer_list<VertexAttribute> attributes);
 
     void draw() const;
@@ -26,14 +27,14 @@ public:
     void drawVerticesInstanced(GLsizei instances) const;
     void drawPositionsInstanced(GLsizei instances, GLsizei layers) const;
 
-    // Reads per-instance model and normal matrices (see Instance) from the given
-    // buffer, at the locations right after the vertex attributes: the model
-    // matrix at 4-7, the normal matrix at 8-10.
+    // Reads per-instance model and normal matrices (see Instance) from the
+    // given buffer, at the locations right after the vertex attributes: the
+    // model matrix at 4-7, the normal matrix at 8-10.
     void setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const;
 
     GLsizei indexCount() const;
 
-private:
+  private:
     VertexArray _vao;
     std::array<ArrayBuffer, VERTEX_ATTRIBUTES.size()> _streams;
     ElementArrayBuffer _ebo;

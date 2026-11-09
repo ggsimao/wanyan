@@ -30,7 +30,8 @@ namespace {
     constexpr float NEAR_PLANE = 0.1f;
     constexpr float FAR_PLANE = 100.0f;
     constexpr float SUN_DISTANCE = 20.0f;
-    constexpr float ASPECT_RATIO = 1.0f;  // as in the Rust version, until window resizing
+    constexpr float ASPECT_RATIO =
+        1.0f;  // as in the Rust version, until window resizing
     constexpr size_t FACES = 6;
     const glm::vec3 WORLD_UP(0.0f, 1.0f, 0.0f);
 
@@ -45,37 +46,58 @@ namespace {
     struct PointLightSpace {
         glm::mat4 projection;
         std::array<glm::mat4, 6> views;
-        glm::mat4 matrix(size_t index) const { return projection * views[index]; }
+        glm::mat4 matrix(size_t index) const {
+            return projection * views[index];
+        }
     };
 
     LightSpace directionalLightSpace(const DirectionalLight& light) {
         // An orthographic box around the origin, looking along the light.
-        const glm::vec3 position = -glm::normalize(light.direction) * SUN_DISTANCE;
-        return {glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 2.0f * SUN_DISTANCE),
-                glm::lookAt(position, glm::vec3(0.0f), WORLD_UP)};
+        const glm::vec3 position =
+            -glm::normalize(light.direction) * SUN_DISTANCE;
+        return {
+            glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 2.0f * SUN_DISTANCE),
+            glm::lookAt(position, glm::vec3(0.0f), WORLD_UP)};
     }
 
     LightSpace spotlightSpace(const Spotlight& spot) {
         // The cone's full angle is twice its half-angle cutoff. Rust passed
-        // gamma.to_degrees() where radians were expected, and only the half-angle.
-        return {glm::perspective(2.0f * spot.outerCutoff, 1.0f, NEAR_PLANE, FAR_PLANE),
-                glm::lookAt(spot.position, spot.position + spot.direction, WORLD_UP)};
+        // gamma.to_degrees() where radians were expected, and only the
+        // half-angle.
+        return {glm::perspective(2.0f * spot.outerCutoff, 1.0f, NEAR_PLANE,
+                                 FAR_PLANE),
+                glm::lookAt(spot.position, spot.position + spot.direction,
+                            WORLD_UP)};
     }
 
     PointLightSpace pointLightSpaces(const PointLight& light) {
         std::array<glm::mat4, 6> views = {
-            glm::lookAt(light.position, light.position+glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)),
-            glm::lookAt(light.position, light.position+glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)),
-            glm::lookAt(light.position, light.position+glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)),
-            glm::lookAt(light.position, light.position+glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)),
-            glm::lookAt(light.position, light.position+glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)),
-            glm::lookAt(light.position, light.position+glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position,
+                        light.position + glm::vec3(1.0, 0.0, 0.0),
+                        glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position,
+                        light.position + glm::vec3(-1.0, 0.0, 0.0),
+                        glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position,
+                        light.position + glm::vec3(0.0, 1.0, 0.0),
+                        glm::vec3(0.0, 0.0, 1.0)),
+            glm::lookAt(light.position,
+                        light.position + glm::vec3(0.0, -1.0, 0.0),
+                        glm::vec3(0.0, 0.0, -1.0)),
+            glm::lookAt(light.position,
+                        light.position + glm::vec3(0.0, 0.0, 1.0),
+                        glm::vec3(0.0, -1.0, 0.0)),
+            glm::lookAt(light.position,
+                        light.position + glm::vec3(0.0, 0.0, -1.0),
+                        glm::vec3(0.0, -1.0, 0.0)),
         };
-        glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, NEAR_PLANE, FAR_PLANE);
+        glm::mat4 shadowProj =
+            glm::perspective(glm::radians(90.0f), 1.0f, NEAR_PLANE, FAR_PLANE);
         return {shadowProj, views};
     }
 
-    void setLightingUniforms(const ShaderProgramBinding& shader, const Lighting& lighting) {
+    void setLightingUniforms(const ShaderProgramBinding& shader,
+                             const Lighting& lighting) {
         shader.setDirectionalLight("dirLight", lighting.directional);
         for (std::size_t i = 0; i < lighting.points.size(); ++i) {
             UniformName pointLight("pointLights[{}]", i);
@@ -93,31 +115,28 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
     render_state::Capability depthTest(GL_DEPTH_TEST, true);
     render_state::DepthFunc depthLess(GL_LESS);
     render_state::Capability culling(GL_CULL_FACE, true);
-    render_state::CullFace backFaces(GL_BACK); // front-face culling detached shadows where objects cross the floor,
-                                                    // so back faces are culled and the bias handles acne.
+    render_state::CullFace backFaces(
+        GL_BACK);  // front-face culling detached shadows where objects cross
+                   // the floor, so back faces are culled and the bias handles
+                   // acne.
 
     ShaderProgramBinding shader(_shaders.shadow);
 
-    const auto render = [&](
-        const ShadowFrameBuffer& shadowMap,
-        const LightSpace& space,
-        const std::optional<FixtureIndices> fixtureIndices
-    ) {
-        ShadowDrawBinding target(shadowMap);  // also sets the viewport to the map's size
-        target.clearDepth();
-        _ubo.setProjViewMat(space.projection * space.view);
-        drawShadowCasters(scene, shader, fixtureIndices, 1);
-    };
-    render(
-        scene.lighting.directional.shadowMap,
-        directionalLightSpace(scene.lighting.directional),
-        scene.lighting.directional.fixtureIndices
-    );
-    render(
-        scene.lighting.spotlight.shadowMap,
-        spotlightSpace(scene.lighting.spotlight),
-        scene.lighting.spotlight.fixtureIndices
-    );
+    const auto render =
+        [&](const ShadowFrameBuffer& shadowMap, const LightSpace& space,
+            const std::optional<FixtureIndices> fixtureIndices) {
+            ShadowDrawBinding target(
+                shadowMap);  // also sets the viewport to the map's size
+            target.clearDepth();
+            _ubo.setProjViewMat(space.projection * space.view);
+            drawShadowCasters(scene, shader, fixtureIndices, 1);
+        };
+    render(scene.lighting.directional.shadowMap,
+           directionalLightSpace(scene.lighting.directional),
+           scene.lighting.directional.fixtureIndices);
+    render(scene.lighting.spotlight.shadowMap,
+           spotlightSpace(scene.lighting.spotlight),
+           scene.lighting.spotlight.fixtureIndices);
 
     ShaderProgramBinding pointShader(_shaders.pointShadow.program());
     for (const auto& lamp : scene.lighting.points) {
@@ -125,19 +144,18 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
         pointTarget.clearDepth();
         PointLightSpace pointSpaces = pointLightSpaces(lamp);
         for (size_t i = 0; i < FACES; ++i)
-            pointShader.setMat4(std::format("shadowMatrices[{}]", i), pointSpaces.matrix(i));
+            pointShader.setMat4(std::format("shadowMatrices[{}]", i),
+                                pointSpaces.matrix(i));
         // pointShader.setVec3("lightPos", lamp.position);
         // pointShader.setFloat("farPlane", FAR_PLANE);
-        drawShadowCasters(scene, pointShader, lamp.fixtureIndices, _shaders.pointShadow.layers());
+        drawShadowCasters(scene, pointShader, lamp.fixtureIndices,
+                          _shaders.pointShadow.layers());
     }
 }
 
 void SceneRenderer::drawShadowCasters(
-    const Scene& scene,
-    const ShaderProgramBinding& shader,
-    const std::optional<FixtureIndices>& fixtureIndices,
-    GLsizei layers
-) const {
+    const Scene& scene, const ShaderProgramBinding& shader,
+    const std::optional<FixtureIndices>& fixtureIndices, GLsizei layers) const {
     size_t index = 0;
     for (const SceneObject& object : scene.objects) {
         if (fixtureIndices && fixtureIndices->objectID == index) {
@@ -159,14 +177,16 @@ void SceneRenderer::compose(const Scene& scene, const Camera& camera) const {
     render_state::CullFace backFaces(GL_BACK);
     render_state::Capability stencilTest(GL_STENCIL_TEST, true);
     render_state::StencilFunc stencilAlways(GL_ALWAYS, 1, 0xFF);
-    render_state::StencilOp stencilReplace(GL_KEEP, GL_KEEP, GL_REPLACE);  // objects mark the stencil
+    render_state::StencilOp stencilReplace(
+        GL_KEEP, GL_KEEP, GL_REPLACE);  // objects mark the stencil
     render_state::StencilMask stencilWrites(0xFF);
     render_state::DepthMask depthMaskOn(true);
     // Blending off as baseline, most objects are opaque.
     render_state::Capability blending(GL_BLEND, false);
 
     TextureUnits units;
-    glm::mat4 proj = glm::perspective(camera.fov(), ASPECT_RATIO, NEAR_PLANE, FAR_PLANE);
+    glm::mat4 proj =
+        glm::perspective(camera.fov(), ASPECT_RATIO, NEAR_PLANE, FAR_PLANE);
 
     glm::mat4 cam_lookat = camera.lookAt();
     // The skybox follows the camera's rotation but not its position.
@@ -178,7 +198,8 @@ void SceneRenderer::compose(const Scene& scene, const Camera& camera) const {
     drawObjects(scene, camera, units);
 }
 
-void SceneRenderer::drawSkyboxes(const Scene& scene, TextureUnits& units) const {
+void SceneRenderer::drawSkyboxes(const Scene& scene,
+                                 TextureUnits& units) const {
     // Seen from inside (no culling), drawn at maximum depth (LEQUAL), and kept
     // out of the stencil buffer.
     render_state::Capability noStencil(GL_STENCIL_TEST, false);
@@ -219,22 +240,27 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
     // The shadow maps keep their units for the whole pass; each object's
     // material takes the units after them and gives them back when drawn.
     const Lighting& lighting = scene.lighting;
-    TextureDrawBinding directionalShadow(units, lighting.directional.shadowMap.texture());
+    TextureDrawBinding directionalShadow(
+        units, lighting.directional.shadowMap.texture());
     shader.setTexture("dirLight.shadow_map", directionalShadow);
-    TextureDrawBinding spotlightShadow(units, lighting.spotlight.shadowMap.texture());
+    TextureDrawBinding spotlightShadow(units,
+                                       lighting.spotlight.shadowMap.texture());
     shader.setTexture("spotlight.shadow_map", spotlightShadow);
 
-    const auto pointShadowMaps = lighting.points
-                                | std::views::transform(&PointLight::shadowMap)
-                                | std::views::transform(&PointShadowFrameBuffer::texture);
+    const auto pointShadowMaps =
+        lighting.points | std::views::transform(&PointLight::shadowMap) |
+        std::views::transform(&PointShadowFrameBuffer::texture);
     TextureDrawBinding<CubeMap> pointShadows(units, pointShadowMaps);
-    for (std::size_t i = 0; i < static_cast<std::size_t>(pointShadows.size()); ++i) {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(pointShadows.size());
+         ++i) {
         UniformName pointLightShadow("pointLights[{}].shadow_map", i);
         shader.setTexture(pointLightShadow.view(), pointShadows, i);
     }
 
-    shader.setMat4("dirLightSpaceMatrix", directionalLightSpace(lighting.directional).matrix());
-    shader.setMat4("spotlightSpaceMatrix", spotlightSpace(lighting.spotlight).matrix());
+    shader.setMat4("dirLightSpaceMatrix",
+                   directionalLightSpace(lighting.directional).matrix());
+    shader.setMat4("spotlightSpaceMatrix",
+                   spotlightSpace(lighting.spotlight).matrix());
     shader.setFloat("pointShadowNearPlane", NEAR_PLANE);
     shader.setFloat("pointShadowFarPlane", FAR_PLANE);
 
@@ -250,7 +276,8 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
         if (object->hasOutline()) {
             ShaderProgramBinding outline(_shaders.outline);
-            _ubo.setModelMat(glm::scale(object->model(), glm::vec3(OUTLINE_SCALE)));
+            _ubo.setModelMat(
+                glm::scale(object->model(), glm::vec3(OUTLINE_SCALE)));
             object->drawOutline(outline, units);
         }
     };
@@ -270,10 +297,6 @@ void SceneRenderer::drawObjects(const Scene& scene, const Camera& camera,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RenderOptions& SceneRenderer::options() {
-    return _options;
-}
+RenderOptions& SceneRenderer::options() { return _options; }
 
-const RenderOptions& SceneRenderer::options() const {
-    return _options;
-}
+const RenderOptions& SceneRenderer::options() const { return _options; }

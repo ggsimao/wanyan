@@ -16,7 +16,7 @@ void SignalHandler::connect(const std::shared_ptr<Slot>& slot) {
 void SignalHandler::waitEvent() {
     SDL_Event ev;
     auto mouseCaptured = SDL_GetRelativeMouseMode();
-    while(SDL_PollEvent(&ev)) {
+    while (SDL_PollEvent(&ev)) {
         if (ev.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
             emit(SignalFocusLost{});
         }
@@ -34,7 +34,8 @@ void SignalHandler::waitEvent() {
             case SDL_MOUSEMOTION:
                 if (mouseCaptured) {
                     // Relative motion since the last event, not the cursor's
-                    // position: with relative mouse mode the cursor doesn't move.
+                    // position: with relative mouse mode the cursor doesn't
+                    // move.
                     emit(SignalMouseMoved{ev.motion.xrel, ev.motion.yrel});
                 }
                 break;
@@ -58,12 +59,15 @@ void SignalHandler::waitEvent() {
 }
 
 void SignalHandler::emit(const SignalType& signal_value) {
-    auto emit_or_remove = [&signal_value](const std::weak_ptr<Slot>& slot) -> bool {
+    auto emit_or_remove =
+        [&signal_value](const std::weak_ptr<Slot>& slot) -> bool {
         auto lock = slot.lock();
         if (lock) {
             lock->onSignal(signal_value);
             return false;
-        } else return true;
+        } else
+            return true;
     };
-    _slots.erase(std::remove_if(_slots.begin(), _slots.end(), emit_or_remove), _slots.end());
+    _slots.erase(std::remove_if(_slots.begin(), _slots.end(), emit_or_remove),
+                 _slots.end());
 }

@@ -1,19 +1,19 @@
 #include "app/launch_options.h"
+#include "app/platform.h"
+#include "app/program.h"
 #include "camera.h"
 #include "controls/controller_hub.h"
 #include "data/uniform_buffer.h"
 #include "debug/frame_stats.h"
-#include "app/platform.h"
-#include "app/program.h"
 #include "random_transform.h"
 #include "scene/demo_scene.h"
 #include "scene/scene_renderer.h"
 #include "screen.h"
 
+#include <CLI/CLI.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-#include <CLI/CLI.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -48,21 +48,13 @@ int main(int argc, char** argv) {
         LaunchOptions options;
 
         // Register options
-        auto seedOption = app.add_option(
-            "--seed",
-            options.seed,
-            "Seed for RNG"
-        );
-        app.add_flag(
-            "--no-layered-shadows",
-            options.platformOptions.forcedUnlayering,
-            "Set if you don't want point shadow layering"
-        );
-        app.add_flag(
-            "--no-vsync",
-            options.platformOptions.noVSync,
-            "Set if you want VSync to be turned off"
-        );
+        auto seedOption =
+            app.add_option("--seed", options.seed, "Seed for RNG");
+        app.add_flag("--no-layered-shadows",
+                     options.platformOptions.forcedUnlayering,
+                     "Set if you don't want point shadow layering");
+        app.add_flag("--no-vsync", options.platformOptions.noVSync,
+                     "Set if you want VSync to be turned off");
 
         // Execute the parsing
         CLI11_PARSE(app, argc, argv);
@@ -75,16 +67,12 @@ int main(int argc, char** argv) {
 
         // First, so it's destroyed last: every GL object below must be
         // deleted while its context still exists.
-        Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT, options.platformOptions);
-        // Intentional startup self-check: confirms GL debug output reaches our callback
-        glDebugMessageInsert(
-            GL_DEBUG_SOURCE_APPLICATION,
-            GL_DEBUG_TYPE_OTHER,
-            1,
-            GL_DEBUG_SEVERITY_MEDIUM,
-            -1,
-            "Debug working."
-        );
+        Platform platform(WINDOW_TITLE, WINDOW_WIDTH, WINDOW_HEIGHT,
+                          options.platformOptions);
+        // Intentional startup self-check: confirms GL debug output reaches our
+        // callback
+        glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER,
+                             1, GL_DEBUG_SEVERITY_MEDIUM, -1, "Debug working.");
 
         const DemoShaders shaders = loadDemoShaders(platform.gpuFeatures());
         UniformBuffer matrices(MATRICES_BINDING);
@@ -92,11 +80,14 @@ int main(int argc, char** argv) {
 
         Camera camera(CAMERA_START);
         Scene scene = buildDemoScene(camera);
-        std::vector<RandomTransform> rockTransforms = buildRockTransforms(options.seed);
+        std::vector<RandomTransform> rockTransforms =
+            buildRockTransforms(options.seed);
 
         SceneRenderer renderer(shaders.forRenderer(), matrices);
-        Screen screen(platform.width(), platform.height(), CLEAR_COLOR, shaders.screen);
-        Screen mirror(platform.width(), platform.height(), CLEAR_COLOR, shaders.screen);
+        Screen screen(platform.width(), platform.height(), CLEAR_COLOR,
+                      shaders.screen);
+        Screen mirror(platform.width(), platform.height(), CLEAR_COLOR,
+                      shaders.screen);
 
         Program program;
         ControllerHub controls;
@@ -108,15 +99,20 @@ int main(int argc, char** argv) {
         while (program.loopActive()) {
             const Clock::time_point now = Clock::now();
             const float frameMilliseconds =
-                std::chrono::duration<float, std::milli>(now - previousFrame).count();
+                std::chrono::duration<float, std::milli>(now - previousFrame)
+                    .count();
             previousFrame = now;
 
             {
                 auto timer = stats.time(debug::FrameStats::UPDATE);
                 controls.update(frameMilliseconds,
-                                {.program=program, .camera=camera, .flashlight=scene.lighting.spotlight,
-                                    .renderOptions=renderer.options(), .screen=screen.parameters(),
-                                    .rockTransforms=rockTransforms, .platform=platform});
+                                {.program = program,
+                                 .camera = camera,
+                                 .flashlight = scene.lighting.spotlight,
+                                 .renderOptions = renderer.options(),
+                                 .screen = screen.parameters(),
+                                 .rockTransforms = rockTransforms,
+                                 .platform = platform});
             }
 
             // The flashlight is held by the camera.
@@ -135,7 +131,8 @@ int main(int argc, char** argv) {
 
             {
                 auto timer = stats.time(debug::FrameStats::SHADOWS);
-                renderer.renderShadowMaps(scene);  // once: shadows don't depend on the camera
+                renderer.renderShadowMaps(
+                    scene);  // once: shadows don't depend on the camera
             }
 
             {

@@ -2,10 +2,6 @@
 
 Program::Program() : _loopActive(true) {}
 
-bool Program::loopActive() const {
-    return _loopActive;
-}
+bool Program::loopActive() const { return _loopActive; }
 
-bool Program::showStats() const {
-    return _showStats;
-}
+bool Program::showStats() const { return _showStats; }

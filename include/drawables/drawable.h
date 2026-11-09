@@ -9,33 +9,40 @@ class TextureUnits;
 
 // Anything a SceneObject can draw: meshes, models, skyboxes, canvases.
 class Drawable {
-public:
+  public:
     virtual ~Drawable() = default;
 
-    virtual void draw(const ShaderProgramBinding& shader, TextureUnits& units) const = 0;
+    virtual void draw(const ShaderProgramBinding& shader,
+                      TextureUnits& units) const = 0;
     virtual void drawPlain(const ShaderProgramBinding& shader) const = 0;
     virtual void drawVertices(const ShaderProgramBinding& shader) const = 0;
     virtual void drawPositions(const ShaderProgramBinding& shader) const = 0;
 
     // Default: things that don't support instancing draw a single copy.
-    virtual void drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
+    virtual void drawInstanced(const ShaderProgramBinding& shader,
+                               TextureUnits& units,
                                GLsizei /*instances*/) const {
         draw(shader, units);
     }
-    virtual void drawPlainInstanced(const ShaderProgramBinding& shader, GLsizei /*instances*/) const {
+    virtual void drawPlainInstanced(const ShaderProgramBinding& shader,
+                                    GLsizei /*instances*/) const {
         drawPlain(shader);
     }
-    virtual void drawVerticesInstanced(const ShaderProgramBinding& shader, GLsizei /*instances*/) const {
+    virtual void drawVerticesInstanced(const ShaderProgramBinding& shader,
+                                       GLsizei /*instances*/) const {
         drawVertices(shader);
     }
-    virtual void drawPositionsInstanced(const ShaderProgramBinding& shader, GLsizei /*instances*/, GLsizei /*layers*/) const {
+    virtual void drawPositionsInstanced(const ShaderProgramBinding& shader,
+                                        GLsizei /*instances*/,
+                                        GLsizei /*layers*/) const {
         drawPositions(shader);
     }
 
     // Default: nothing to set up for things that don't support instancing.
-    virtual void setupInstanceAttributes(const ArrayBuffer& /*instanceBuffer*/) const {}
+    virtual void
+    setupInstanceAttributes(const ArrayBuffer& /*instanceBuffer*/) const {}
 
-protected:
+  protected:
     // Protected so a Drawable can't be copied or moved through a base
     // reference (which would slice it), while derived classes keep their
     // implicit copy and move operations.

@@ -75,8 +75,9 @@ void CameraController::onSignal(const SignalType& signal) {
 }
 
 void CameraController::processSignals(Camera& obj) {
-    const glm::vec3 movement =
-        glm::vec3(axis(_right, _left), axis(_up, _down), axis(_backward, _forward)) * _transSpeed;
+    const glm::vec3 movement = glm::vec3(axis(_right, _left), axis(_up, _down),
+                                         axis(_backward, _forward)) *
+                               _transSpeed;
 
     obj.translateLongitudinal(movement.x);
     obj.translateVertical(movement.y);

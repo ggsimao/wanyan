@@ -1,9 +1,9 @@
 #pragma once
 
-#include "shaders/uniform_cache.h"
-#include "textures/draw_binding.h"
 #include "scoped_binding.h"
 #include "shaders/shader.h"
+#include "shaders/uniform_cache.h"
+#include "textures/draw_binding.h"
 
 #include <GL/glew.h>
 #include <glm/mat3x3.hpp>
@@ -25,9 +25,11 @@ struct Spotlight;
 // construction. Uniforms are set through a ShaderProgramBinding, because
 // glUniform* acts on whichever program is currently in use.
 class ShaderProgram {
-public:
-    ShaderProgram(std::string label, const VertexShader& vertex, const FragmentShader& fragment);
-    ShaderProgram(std::string label, const VertexShader& vertex, const GeometryShader& geometry,
+  public:
+    ShaderProgram(std::string label, const VertexShader& vertex,
+                  const FragmentShader& fragment);
+    ShaderProgram(std::string label, const VertexShader& vertex,
+                  const GeometryShader& geometry,
                   const FragmentShader& fragment);
     ShaderProgram(const ShaderProgram&) = delete;
     ShaderProgram& operator=(const ShaderProgram&) = delete;
@@ -35,10 +37,13 @@ public:
     ShaderProgram& operator=(ShaderProgram&& other) noexcept;
     ~ShaderProgram();
 
-    static ShaderProgram fromFiles(std::string label, const std::filesystem::path& vertex,
+    static ShaderProgram fromFiles(std::string label,
+                                   const std::filesystem::path& vertex,
                                    const std::filesystem::path& fragment);
-    static ShaderProgram fromFiles(std::string label, const std::filesystem::path& vertex,
-                                   const std::filesystem::path& geometry, const std::filesystem::path& fragment);
+    static ShaderProgram fromFiles(std::string label,
+                                   const std::filesystem::path& vertex,
+                                   const std::filesystem::path& geometry,
+                                   const std::filesystem::path& fragment);
 
     GLuint id() const;
     // -1 if the program has no active uniform with that name; setting -1 is a
@@ -48,7 +53,7 @@ public:
     void bind() const;
     static void clearBinding();
 
-private:
+  private:
     void link(std::initializer_list<GLuint> shaders);
     std::string infoLog() const;
     void release() noexcept;
@@ -61,7 +66,7 @@ private:
 // Puts a program in use for a scope and restores the previous one after.
 // All uniform setters live here: they only work on the program in use.
 class ShaderProgramBinding : ScopedBinding<ShaderProgram> {
-public:
+  public:
     explicit ShaderProgramBinding(const ShaderProgram& program)
         : ScopedBinding(program), _program(program) {}
 
@@ -74,20 +79,24 @@ public:
     void setMat4(std::string_view name, const glm::mat4& value) const;
 
     template <typename Texture>
-    void setTexture(std::string_view name, const TextureDrawBinding<Texture>& texture,
-                std::size_t index = 0) const {
+    void setTexture(std::string_view name,
+                    const TextureDrawBinding<Texture>& texture,
+                    std::size_t index = 0) const {
         setInt(name, texture.unit(index));
     }
-    void setMaterial(std::string_view name, const MaterialDrawBinding& material) const;
+    void setMaterial(std::string_view name,
+                     const MaterialDrawBinding& material) const;
 
     // Shadow maps aren't set here: bind them with a TextureDrawBinding and
     // pass it to setTexture(name + ".shadow_map", ...).
-    void setDirectionalLight(std::string_view name, const DirectionalLight& light) const;
+    void setDirectionalLight(std::string_view name,
+                             const DirectionalLight& light) const;
     void setPointLight(std::string_view name, const PointLight& light) const;
     void setSpotlight(std::string_view name, const Spotlight& light) const;
 
-private:
+  private:
     void setLightRadiance(std::string_view name, const Light& colors) const;
-    void setAttenuation(std::string_view name, const Attenuation& attenuation) const;
+    void setAttenuation(std::string_view name,
+                        const Attenuation& attenuation) const;
     const ShaderProgram& _program;
 };

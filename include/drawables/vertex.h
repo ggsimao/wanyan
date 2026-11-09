@@ -34,7 +34,8 @@ struct Vertex {
     explicit Vertex(const glm::vec3& p);
 };
 
-using VertexMember = std::variant<glm::vec2 Vertex::*, glm::vec3 Vertex::*, glm::vec4 Vertex::*>;
+using VertexMember =
+    std::variant<glm::vec2 Vertex::*, glm::vec3 Vertex::*, glm::vec4 Vertex::*>;
 
 // One vertex attribute read from Vertex: its shader location and the field it
 // reads. The field's type decides the attribute's format (floats, as many as
@@ -44,20 +45,24 @@ struct VertexAttribute {
     VertexMember member;
 };
 
-inline constexpr std::size_t POS_LOCATION = 0, NORMAL_LOCATION = 1, TEX_COORDS_LOCATION = 2, TANGENT_LOCATION = 3;
+inline constexpr std::size_t POS_LOCATION = 0, NORMAL_LOCATION = 1,
+                             TEX_COORDS_LOCATION = 2, TANGENT_LOCATION = 3;
 
 // Every attribute a Vertex has, at fixed locations shared by all shaders.
 // Instance attributes take the locations right after these (see MeshBuffers),
 // and the shaders hardcode those (aInstModel at 4, aInstNormal at 8), so a new
 // attribute here means updating every vertex shader.
-inline constexpr std::array VERTEX_ATTRIBUTES {
-    VertexAttribute{.location=POS_LOCATION, .member = &Vertex::pos},
-    VertexAttribute{.location=NORMAL_LOCATION, .member = &Vertex::normal},
-    VertexAttribute{.location=TEX_COORDS_LOCATION, .member = &Vertex::texCoords},
-    VertexAttribute{.location=TANGENT_LOCATION, .member = &Vertex::tangent},
+inline constexpr std::array VERTEX_ATTRIBUTES{
+    VertexAttribute{.location = POS_LOCATION, .member = &Vertex::pos},
+    VertexAttribute{.location = NORMAL_LOCATION, .member = &Vertex::normal},
+    VertexAttribute{.location = TEX_COORDS_LOCATION,
+                    .member = &Vertex::texCoords},
+    VertexAttribute{.location = TANGENT_LOCATION, .member = &Vertex::tangent},
 };
 static_assert(VERTEX_ATTRIBUTES.size() == 4,
-              "Vertex shaders hardcode the instance locations after these: update them too");
+              "Vertex shaders hardcode the instance locations after these: "
+              "update them too");
 
 static_assert(std::is_trivially_copyable_v<Vertex>);
-static_assert(sizeof(Vertex) == 12 * sizeof(float)); // catches GLM alignment flags
+static_assert(sizeof(Vertex) ==
+              12 * sizeof(float));  // catches GLM alignment flags

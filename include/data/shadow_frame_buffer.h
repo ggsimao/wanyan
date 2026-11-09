@@ -8,7 +8,7 @@
 // Depth-only render target for shadow mapping. The depth texture is what
 // the lighting shader samples. Fully set up (or throws) on construction.
 class ShadowFrameBuffer {
-public:
+  public:
     ShadowFrameBuffer(GLsizei width, GLsizei height);
     ShadowFrameBuffer(const ShadowFrameBuffer&) = delete;
     ShadowFrameBuffer& operator=(const ShadowFrameBuffer&) = delete;
@@ -26,7 +26,7 @@ public:
     static void clearDrawBinding();
     static void clearReadBinding();
 
-private:
+  private:
     void allocateDepthTexture();
     void release() noexcept;
 
@@ -35,15 +35,17 @@ private:
     GLsizei _width = 0, _height = 0;
 };
 
-using ShadowDrawBindingBase = ScopedBinding<ShadowFrameBuffer, &ShadowFrameBuffer::bindDraw,
-                                            &ShadowFrameBuffer::clearDrawBinding>;
-using ShadowReadBindingBase = ScopedBinding<ShadowFrameBuffer, &ShadowFrameBuffer::bindRead,
-                                            &ShadowFrameBuffer::clearReadBinding>;
+using ShadowDrawBindingBase =
+    ScopedBinding<ShadowFrameBuffer, &ShadowFrameBuffer::bindDraw,
+                  &ShadowFrameBuffer::clearDrawBinding>;
+using ShadowReadBindingBase =
+    ScopedBinding<ShadowFrameBuffer, &ShadowFrameBuffer::bindRead,
+                  &ShadowFrameBuffer::clearReadBinding>;
 
 // Renders into a shadow map. Also sets the viewport to the shadow map's size
 // and restores the previous viewport on exit.
 class ShadowDrawBinding : ShadowDrawBindingBase {
-public:
+  public:
     explicit ShadowDrawBinding(const ShadowFrameBuffer& sfbo);
     ~ShadowDrawBinding();
 
@@ -52,14 +54,15 @@ public:
     void clearDepth();
     GLenum status() const;
 
-private:
+  private:
     GLint _previousViewport[4] = {0, 0, 0, 0};
 };
 
 // Only used during setup, to tell GL the framebuffer has no colour to read.
 class ShadowReadBinding : ShadowReadBindingBase {
-public:
-    explicit ShadowReadBinding(const ShadowFrameBuffer& sfbo) : ShadowReadBindingBase(sfbo) {}
+  public:
+    explicit ShadowReadBinding(const ShadowFrameBuffer& sfbo)
+        : ShadowReadBindingBase(sfbo) {}
 
     void disableReadBuffer();
 };

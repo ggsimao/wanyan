@@ -9,15 +9,15 @@
 #include <stdexcept>
 #include <utility>
 
-ShaderProgram::ShaderProgram(std::string label, const VertexShader &vertex,
-                             const FragmentShader &fragment)
+ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
+                             const FragmentShader& fragment)
     : _label(std::move(label)) {
     link({vertex.id(), fragment.id()});
 }
 
-ShaderProgram::ShaderProgram(std::string label, const VertexShader &vertex,
-                             const GeometryShader &geometry,
-                             const FragmentShader &fragment)
+ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
+                             const GeometryShader& geometry,
+                             const FragmentShader& fragment)
     : _label(std::move(label)) {
     link({vertex.id(), geometry.id(), fragment.id()});
 }
@@ -55,26 +55,26 @@ void ShaderProgram::link(std::initializer_list<GLuint> shaders) {
 }
 
 ShaderProgram ShaderProgram::fromFiles(std::string label,
-                                       const std::filesystem::path &vertex,
-                                       const std::filesystem::path &fragment) {
+                                       const std::filesystem::path& vertex,
+                                       const std::filesystem::path& fragment) {
     return ShaderProgram(std::move(label), VertexShader::fromFile(vertex),
                          FragmentShader::fromFile(fragment));
 }
 
 ShaderProgram ShaderProgram::fromFiles(std::string label,
-                                       const std::filesystem::path &vertex,
-                                       const std::filesystem::path &geometry,
-                                       const std::filesystem::path &fragment) {
+                                       const std::filesystem::path& vertex,
+                                       const std::filesystem::path& geometry,
+                                       const std::filesystem::path& fragment) {
     return ShaderProgram(std::move(label), VertexShader::fromFile(vertex),
                          GeometryShader::fromFile(geometry),
                          FragmentShader::fromFile(fragment));
 }
 
-ShaderProgram::ShaderProgram(ShaderProgram &&other) noexcept
+ShaderProgram::ShaderProgram(ShaderProgram&& other) noexcept
     : _label(std::move(other._label)), _id(std::exchange(other._id, 0)),
       _cache(std::move(other._cache)) {}
 
-ShaderProgram &ShaderProgram::operator=(ShaderProgram &&other) noexcept {
+ShaderProgram& ShaderProgram::operator=(ShaderProgram&& other) noexcept {
     if (this != &other) {
         release();
         _label = std::move(other._label);
@@ -131,35 +131,35 @@ void ShaderProgramBinding::setFloat(std::string_view name,
 }
 
 void ShaderProgramBinding::setVec3(std::string_view name,
-                                   const glm::vec3 &value) const {
+                                   const glm::vec3& value) const {
     assertActive();
     glUniform3f(_program.uniformLocation(name), value.x, value.y, value.z);
 }
 
 void ShaderProgramBinding::setVec4(std::string_view name,
-                                   const glm::vec4 &value) const {
+                                   const glm::vec4& value) const {
     assertActive();
     glUniform4f(_program.uniformLocation(name), value.x, value.y, value.z,
                 value.w);
 }
 
 void ShaderProgramBinding::setMat3(std::string_view name,
-                                   const glm::mat3 &value) const {
+                                   const glm::mat3& value) const {
     assertActive();
     glUniformMatrix3fv(_program.uniformLocation(name), 1, GL_FALSE,
                        &value[0][0]);
 }
 
 void ShaderProgramBinding::setMat4(std::string_view name,
-                                   const glm::mat4 &value) const {
+                                   const glm::mat4& value) const {
     assertActive();
     glUniformMatrix4fv(_program.uniformLocation(name), 1, GL_FALSE,
                        &value[0][0]);
 }
 
 void ShaderProgramBinding::setMaterial(
-    std::string_view name, const MaterialDrawBinding &material) const {
-    const Material &m = material.material();
+    std::string_view name, const MaterialDrawBinding& material) const {
+    const Material& m = material.material();
     const std::size_t diffuseCount = m.diffuseMaps().size();
     const std::size_t specularCount = m.specularMaps().size();
 
@@ -194,14 +194,14 @@ void ShaderProgramBinding::setMaterial(
 }
 
 void ShaderProgramBinding::setDirectionalLight(
-    std::string_view name, const DirectionalLight &light) const {
+    std::string_view name, const DirectionalLight& light) const {
     UniformName direction("{}.direction", name);
     setVec3(direction.view(), light.direction);
     setLightRadiance(name, light);
 }
 
 void ShaderProgramBinding::setPointLight(std::string_view name,
-                                         const PointLight &light) const {
+                                         const PointLight& light) const {
     UniformName position("{}.position", name);
     setVec3(position.view(), light.position);
     setAttenuation(name, light.attenuation);
@@ -209,7 +209,7 @@ void ShaderProgramBinding::setPointLight(std::string_view name,
 }
 
 void ShaderProgramBinding::setSpotlight(std::string_view name,
-                                        const Spotlight &light) const {
+                                        const Spotlight& light) const {
     UniformName position("{}.position", name);
     UniformName direction("{}.direction", name);
     setVec3(position.view(), light.position);
@@ -224,13 +224,13 @@ void ShaderProgramBinding::setSpotlight(std::string_view name,
 }
 
 void ShaderProgramBinding::setLightRadiance(std::string_view name,
-                                            const Light &color) const {
+                                            const Light& color) const {
     UniformName radiance("{}.radiance", name);
     setVec3(radiance.view(), color.effectiveRadiance());
 }
 
 void ShaderProgramBinding::setAttenuation(
-    std::string_view name, const Attenuation &attenuation) const {
+    std::string_view name, const Attenuation& attenuation) const {
     UniformName constant("{}.attenuation.constant", name);
     UniformName linear("{}.attenuation.linear", name);
     UniformName quadratic("{}.attenuation.quadratic", name);

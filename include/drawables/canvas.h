@@ -7,15 +7,16 @@
 // A quad covering the whole of clip space, for drawing a screen texture.
 // Positions at location 0, texture coordinates at location 1.
 class Canvas : public Drawable {
-public:
+  public:
     explicit Canvas(const Texture2DMultisample& texture);
 
-    void draw(const ShaderProgramBinding& shader, TextureUnits& units) const override;
+    void draw(const ShaderProgramBinding& shader,
+              TextureUnits& units) const override;
     void drawPlain(const ShaderProgramBinding& shader) const override;
     void drawVertices(const ShaderProgramBinding& shader) const override;
     void drawPositions(const ShaderProgramBinding& shader) const override;
 
-private:
+  private:
     MeshBuffers _buffers;
     const Texture2DMultisample* _texture;
 };

@@ -36,12 +36,12 @@ PointShadowFrameBuffer::PointShadowFrameBuffer(GLsizei width, GLsizei height)
 }
 
 PointShadowFrameBuffer::PointShadowFrameBuffer(
-    PointShadowFrameBuffer &&other) noexcept
+    PointShadowFrameBuffer&& other) noexcept
     : _texture(std::move(other._texture)), _id(std::exchange(other._id, 0)),
       _width(other._width), _height(other._height) {}
 
-PointShadowFrameBuffer &
-PointShadowFrameBuffer::operator=(PointShadowFrameBuffer &&other) noexcept {
+PointShadowFrameBuffer&
+PointShadowFrameBuffer::operator=(PointShadowFrameBuffer&& other) noexcept {
     if (this != &other) {
         release();
         _texture = std::move(other._texture);
@@ -67,7 +67,7 @@ GLsizei PointShadowFrameBuffer::width() const { return _width; }
 
 GLsizei PointShadowFrameBuffer::height() const { return _height; }
 
-const CubeMap &PointShadowFrameBuffer::texture() const { return _texture; }
+const CubeMap& PointShadowFrameBuffer::texture() const { return _texture; }
 
 void PointShadowFrameBuffer::bindDraw() const {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _id);
@@ -99,7 +99,7 @@ void PointShadowFrameBuffer::allocateDepthTexture() {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PointShadowDrawBinding::PointShadowDrawBinding(
-    const PointShadowFrameBuffer &sfbo)
+    const PointShadowFrameBuffer& sfbo)
     : PointShadowDrawBindingBase(sfbo) {
     glGetIntegerv(GL_VIEWPORT, _previousViewport);
     glViewport(0, 0, sfbo.width(), sfbo.height());
@@ -111,7 +111,7 @@ PointShadowDrawBinding::~PointShadowDrawBinding() {
                _previousViewport[3]);
 }
 
-void PointShadowDrawBinding::attachDepth(const CubeMap &texture) {
+void PointShadowDrawBinding::attachDepth(const CubeMap& texture) {
     assertActive();
     glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture.id(),
                          0);

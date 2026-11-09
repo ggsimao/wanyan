@@ -2,15 +2,13 @@
 layout(location = 0) in vec3 aPos;
 layout(location = 4) in mat4 aInstModel;
 
-layout(std140, binding = 0) uniform Matrices {
-    mat4 modelMat;
-};
+layout(std140, binding = 0) uniform Matrices { mat4 modelMat; };
 
 uniform int excludedInstance;
 
 void main() {
     if (gl_InstanceID == excludedInstance) {
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // outside the clip volume
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);  // outside the clip volume
     } else {
         gl_Position = modelMat * (aInstModel * vec4(aPos, 1.0));
     }

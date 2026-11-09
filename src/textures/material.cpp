@@ -25,11 +25,11 @@ Material::Material(MaterialParameters params)
     }
 }
 
-const std::vector<TexturePtr> &Material::diffuseMaps() const {
+const std::vector<TexturePtr>& Material::diffuseMaps() const {
     return _diffuseMaps;
 }
 
-const std::vector<TexturePtr> &Material::specularMaps() const {
+const std::vector<TexturePtr>& Material::specularMaps() const {
     return _specularMaps;
 }
 

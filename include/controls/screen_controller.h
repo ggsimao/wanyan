@@ -6,11 +6,11 @@
 // Screen effects: E toggles edge filter, M toggles the shader's MSAA
 // resolve, = and - raise and lower gamma in steps of 0.2 (between 1 and 3).
 class ScreenController : public Slot, public Controller<ScreenParameters> {
-public:
+  public:
     void onSignal(const SignalType& signal) override;
     void processSignals(ScreenParameters& parameters) override;
 
-private:
+  private:
     void onKeyPressed(const SDL_Keysym& key);
 
     bool _filterOn = false;

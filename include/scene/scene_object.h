@@ -23,7 +23,7 @@ class TextureUnits;
 // The object's own model matrix (from Spatial) goes to the uniform buffer;
 // each instance's matrices go to the instance buffer.
 class SceneObject : public Spatial<SceneObject> {
-public:
+  public:
     // Only takes part in overload resolution for Drawable types, so it can't
     // capture SceneObject's own moves or the private constructor's unique_ptr.
     template <std::derived_from<Drawable> T>
@@ -57,12 +57,14 @@ public:
     void draw(const ShaderProgramBinding& shader, TextureUnits& units) const;
     void drawPlain(const ShaderProgramBinding& shader) const;
     void drawVertices(const ShaderProgramBinding& shader) const;
-    void drawPositions(const ShaderProgramBinding& shader, GLsizei layers) const;
+    void drawPositions(const ShaderProgramBinding& shader,
+                       GLsizei layers) const;
     // Draws the outline around the stencil written by draw(); the caller sets
     // up the outline shader and the scaled model matrix.
-    void drawOutline(const ShaderProgramBinding& shader, TextureUnits& units) const;
+    void drawOutline(const ShaderProgramBinding& shader,
+                     TextureUnits& units) const;
 
-private:
+  private:
     explicit SceneObject(std::unique_ptr<Drawable> drawable);
     void uploadInstances() const;
 

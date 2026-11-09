@@ -2,14 +2,15 @@
 #include <stdexcept>
 #include <utility>
 
-template <GLenum target>
-Buffer<target>::Buffer() {
+template <GLenum target> Buffer<target>::Buffer() {
     glGenBuffers(1, &_id);
-    if (_id == 0) throw std::runtime_error("Couldn't make a buffer object");
+    if (_id == 0)
+        throw std::runtime_error("Couldn't make a buffer object");
 }
 
 template <GLenum target>
-Buffer<target>::Buffer(Buffer&& other) noexcept : _id(std::exchange(other._id, 0)) {}
+Buffer<target>::Buffer(Buffer&& other) noexcept
+    : _id(std::exchange(other._id, 0)) {}
 
 template <GLenum target>
 Buffer<target>& Buffer<target>::operator=(Buffer&& other) noexcept {
@@ -21,31 +22,22 @@ Buffer<target>& Buffer<target>::operator=(Buffer&& other) noexcept {
     return *this;
 }
 
-template <GLenum target>
-Buffer<target>::~Buffer() {
-    release();
-}
+template <GLenum target> Buffer<target>::~Buffer() { release(); }
 
-template <GLenum target>
-void Buffer<target>::release() noexcept {
+template <GLenum target> void Buffer<target>::release() noexcept {
     if (_id != 0) {
         glDeleteBuffers(1, &_id);
         _id = 0;
     }
 }
 
-template <GLenum target>
-GLuint Buffer<target>::id() const {
-    return _id;
-}
+template <GLenum target> GLuint Buffer<target>::id() const { return _id; }
 
-template <GLenum target>
-void Buffer<target>::bind() const {
+template <GLenum target> void Buffer<target>::bind() const {
     glBindBuffer(target, _id);
 }
 
-template <GLenum target>
-void Buffer<target>::clearBinding() {
+template <GLenum target> void Buffer<target>::clearBinding() {
     glBindBuffer(target, 0);
 }
 

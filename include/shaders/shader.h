@@ -17,9 +17,8 @@ enum class ShaderType : GLenum {
 // The stage is part of the type, so ShaderProgram can require the right
 // stages in the right order at compile time. The implementation lives in
 // shader.cpp, explicitly instantiated for the three stages below.
-template <ShaderType Type>
-class Shader {
-public:
+template <ShaderType Type> class Shader {
+  public:
     explicit Shader(const std::string& source);
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
@@ -31,7 +30,7 @@ public:
 
     GLuint id() const;
 
-private:
+  private:
     std::string infoLog() const;
     void release() noexcept;
 

@@ -4,7 +4,8 @@
 #include <iostream>
 
 namespace {
-    constexpr const char* SECTION_NAMES[] = {"Control update", "Instance move", "Shadows", "Draw"};
+    constexpr const char* SECTION_NAMES[] = {"Control update", "Instance move",
+                                             "Shadows", "Draw"};
 
     double milliseconds(std::chrono::steady_clock::duration duration) {
         return std::chrono::duration<double, std::milli>(duration).count();
@@ -12,7 +13,8 @@ namespace {
 }  // namespace
 
 debug::FrameStats::Timer::Timer(FrameStats& stats, Section section)
-    : _stats(stats), _section(section), _start(Clock::now()), _scope(stats._gpu[stats._slot][section].query) {
+    : _stats(stats), _section(section), _start(Clock::now()),
+      _scope(stats._gpu[stats._slot][section].query) {
     _stats._gpu[_stats._slot][section].pending = true;
 }
 
@@ -31,7 +33,8 @@ void debug::FrameStats::endFrame(bool report) {
     _slot = (_slot + 1) % FRAMES_IN_FLIGHT;
     for (std::size_t i = 0; i < SECTION_COUNT; ++i) {
         if (_gpu[_slot][i].pending && _gpu[_slot][i].query.available()) {
-            _gpuTotals[i] += std::chrono::nanoseconds(_gpu[_slot][i].query.result());
+            _gpuTotals[i] +=
+                std::chrono::nanoseconds(_gpu[_slot][i].query.result());
             ++_samples[i];
         }
         _gpu[_slot][i].pending = false;
@@ -45,13 +48,20 @@ void debug::FrameStats::endFrame(bool report) {
     if (report) {
         const auto frames = static_cast<double>(_frames);
         for (std::size_t i = 0; i < SECTION_COUNT; ++i) {
-            std::cout << SECTION_NAMES[i] << ": CPU " << std::format("{:.2f}", milliseconds(_cpuTotals[i]) / frames) << " ms, ";
+            std::cout << SECTION_NAMES[i] << ": CPU "
+                      << std::format("{:.2f}",
+                                     milliseconds(_cpuTotals[i]) / frames)
+                      << " ms, ";
             if (_samples[i] == 0)
                 std::cout << "GPU no data\n";
             else
-                std::cout << "GPU " << std::format("{:.2f}", milliseconds(_gpuTotals[i]) / _samples[i]) << " ms\n";
+                std::cout << "GPU "
+                          << std::format("{:.2f}", milliseconds(_gpuTotals[i]) /
+                                                       _samples[i])
+                          << " ms\n";
         }
-        std::cout << "FPS: " << frames / (milliseconds(elapsed) / 1000.0) << '\n'
+        std::cout << "FPS: " << frames / (milliseconds(elapsed) / 1000.0)
+                  << '\n'
                   << "----------------------------------------\n";
     }
 

@@ -28,49 +28,49 @@
 #endif
 
 namespace {
-    std::filesystem::path asset(const char *relative) {
+    std::filesystem::path asset(const char* relative) {
         return std::filesystem::path(WANYAN_ROOT) / relative;
     }
 
     constexpr size_t LAMPS_INDEX = 3;
 
     // Shaders
-    constexpr const char *REGULAR_VERT_SHADER =
+    constexpr const char* REGULAR_VERT_SHADER =
         "shaders/regular_vert_shader.vs";
-    constexpr const char *OBJECT_FRAG_SHADER = "shaders/object_frag_shader.fs";
-    constexpr const char *DEBUG_VERT_SHADER = "shaders/debug_vert_shader.vs";
-    constexpr const char *DEBUG_GEO_SHADER = "shaders/debug_geo_shader.gs";
-    constexpr const char *DEBUG_FRAG_SHADER = "shaders/debug_frag_shader.fs";
-    constexpr const char *BUFFER_FRAG_SHADER = "shaders/buffer_frag_shader.fs";
-    constexpr const char *SCREEN_VERT_SHADER = "shaders/screen_vert_shader.vs";
-    constexpr const char *SCREEN_FRAG_SHADER = "shaders/screen_frag_shader.fs";
-    constexpr const char *SKYBOX_VERT_SHADER = "shaders/skybox_vert_shader.vs";
-    constexpr const char *SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
-    constexpr const char *SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
-    constexpr const char *SHADOW_FRAG_SHADER = "shaders/shadow_frag_shader.fs";
-    constexpr const char *POINTSHADOW_LAYERED_VERT_SHADER =
+    constexpr const char* OBJECT_FRAG_SHADER = "shaders/object_frag_shader.fs";
+    constexpr const char* DEBUG_VERT_SHADER = "shaders/debug_vert_shader.vs";
+    constexpr const char* DEBUG_GEO_SHADER = "shaders/debug_geo_shader.gs";
+    constexpr const char* DEBUG_FRAG_SHADER = "shaders/debug_frag_shader.fs";
+    constexpr const char* BUFFER_FRAG_SHADER = "shaders/buffer_frag_shader.fs";
+    constexpr const char* SCREEN_VERT_SHADER = "shaders/screen_vert_shader.vs";
+    constexpr const char* SCREEN_FRAG_SHADER = "shaders/screen_frag_shader.fs";
+    constexpr const char* SKYBOX_VERT_SHADER = "shaders/skybox_vert_shader.vs";
+    constexpr const char* SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
+    constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
+    constexpr const char* SHADOW_FRAG_SHADER = "shaders/shadow_frag_shader.fs";
+    constexpr const char* POINTSHADOW_LAYERED_VERT_SHADER =
         "shaders/pointshadow_layered_vert_shader.vs";
-    constexpr const char *POINTSHADOW_VERT_SHADER =
+    constexpr const char* POINTSHADOW_VERT_SHADER =
         "shaders/pointshadow_vert_shader.vs";
-    constexpr const char *POINTSHADOW_GEO_SHADER =
+    constexpr const char* POINTSHADOW_GEO_SHADER =
         "shaders/pointshadow_geo_shader.gs";
-    constexpr const char *POINTSHADOW_FRAG_SHADER =
+    constexpr const char* POINTSHADOW_FRAG_SHADER =
         "shaders/pointshadow_frag_shader.fs";
 
     // Textures and models
-    constexpr const char *CONTAINER_TEXTURE =
+    constexpr const char* CONTAINER_TEXTURE =
         "resources/textures/container2.png";
-    constexpr const char *CONTAINER_SPECULAR =
+    constexpr const char* CONTAINER_SPECULAR =
         "resources/textures/container2_specular.png";
-    constexpr const char *LAMP_TEXTURE = "resources/textures/glowstone.png";
-    constexpr const char *WINDOW_TEXTURE = "resources/textures/window_diff.png";
-    constexpr const char *WINDOW_SPECULAR =
+    constexpr const char* LAMP_TEXTURE = "resources/textures/glowstone.png";
+    constexpr const char* WINDOW_TEXTURE = "resources/textures/window_diff.png";
+    constexpr const char* WINDOW_SPECULAR =
         "resources/textures/window_spec.png";
-    constexpr const char *WOOD_TEXTURE = "resources/textures/wood.jpg";
-    constexpr const char *WOOD_NORMAL_MAP =
+    constexpr const char* WOOD_TEXTURE = "resources/textures/wood.jpg";
+    constexpr const char* WOOD_NORMAL_MAP =
         "resources/textures/wood_normal.png";
-    constexpr const char *WOOD_DEPTH_MAP = "resources/textures/wood_depth.png";
-    constexpr const char *ROCK_MODEL = "resources/models/rocks/rock.obj";
+    constexpr const char* WOOD_DEPTH_MAP = "resources/textures/wood_depth.png";
+    constexpr const char* ROCK_MODEL = "resources/models/rocks/rock.obj";
 
     // Not used yet; kept for later. Commented out because unused constants
     // are a warning, and -Werror makes that an error.
@@ -90,13 +90,13 @@ namespace {
         asset("resources/textures/skybox/back.jpg"),
     };
 
-    TexturePtr texture(TextureType type, const char *path, GLenum wrapping) {
+    TexturePtr texture(TextureType type, const char* path, GLenum wrapping) {
         return std::make_shared<const Texture2D>(type, asset(path), wrapping);
     }
 
     // ------------------------------------------------------------ lighting
 
-    Lighting buildLighting(const Camera &camera) {
+    Lighting buildLighting(const Camera& camera) {
         const glm::vec3 white(1.0f);
         const Attenuation pointAttenuation{
             .constant = 1.0f, .linear = 0.5f, .quadratic = 0.25f};
@@ -109,7 +109,7 @@ namespace {
 
         std::vector<PointLight> lamps;
         size_t instanceIndex = 0;
-        for (const glm::vec3 &position :
+        for (const glm::vec3& position :
              {glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(-1.0f, -2.0f, -1.0f),
               glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, -2.5f)}) {
             lamps.emplace_back(
@@ -172,7 +172,7 @@ namespace {
     }
 
     // One small glowing cube per point light, at the light's position.
-    SceneObject buildLamps(const std::vector<PointLight> &lights) {
+    SceneObject buildLamps(const std::vector<PointLight>& lights) {
         Material material({.diff = {texture(TextureType::DIFFUSE, LAMP_TEXTURE,
                                             GL_CLAMP_TO_EDGE)},
                            .shininess = 32.0f});
@@ -222,7 +222,7 @@ SceneShaders DemoShaders::forRenderer() const {
     return {object, skybox, outline, shadow, pointShadow, debug};
 }
 
-DemoShaders loadDemoShaders(const GpuFeatures &gpuFeatures) {
+DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
     PointShadowShader pointShadow =
         gpuFeatures.layeredVertexOutput
             ? PointShadowShader::layered("PointShadow",
@@ -250,7 +250,7 @@ DemoShaders loadDemoShaders(const GpuFeatures &gpuFeatures) {
     };
 }
 
-Scene buildDemoScene(const Camera &camera) {
+Scene buildDemoScene(const Camera& camera) {
     Lighting lighting = buildLighting(camera);
 
     std::vector<SceneObject> objects;

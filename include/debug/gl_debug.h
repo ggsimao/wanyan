@@ -9,4 +9,4 @@ namespace debug {
     inline constexpr bool GL_DEBUG_ENABLED = false;
 #endif
     void enableGlDebugOutput();
-}
+}  // namespace debug

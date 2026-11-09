@@ -9,18 +9,20 @@
 
 Screen::Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
                const ShaderProgram& shader)
-    : _framebuffer(width, height), _canvas(_framebuffer.texture()), _shader(shader) {
+    : _framebuffer(width, height), _canvas(_framebuffer.texture()),
+      _shader(shader) {
     _parameters.clearColor = clearColor;
 }
 
-void Screen::drawOnFramebuffer(const SceneRenderer& renderer, const Scene& scene,
-                               const Camera& camera) const {
+void Screen::drawOnFramebuffer(const SceneRenderer& renderer,
+                               const Scene& scene, const Camera& camera) const {
     DrawFrameBufferBinding target(_framebuffer);
     target.clear(_parameters.clearColor);
     renderer.compose(scene, camera);
 }
 
-void Screen::drawOnAnother(const Screen& other, float scaling, const glm::vec2& offset) const {
+void Screen::drawOnAnother(const Screen& other, float scaling,
+                           const glm::vec2& offset) const {
     DrawFrameBufferBinding target(other._framebuffer);
     // Scaled about the centre, then moved: what Rust did by cloning the canvas
     // object and transforming it every frame.
@@ -39,7 +41,8 @@ void Screen::drawOnScreen() const {
     present(glm::mat4(1.0f), _parameters.gamma, _parameters);
 }
 
-void Screen::present(const glm::mat4& model, float gamma, const ScreenParameters& effects) const {
+void Screen::present(const glm::mat4& model, float gamma,
+                     const ScreenParameters& effects) const {
     // The canvas is drawn on top of whatever is there.
     render_state::Capability noDepth(GL_DEPTH_TEST, false);
 
@@ -53,10 +56,6 @@ void Screen::present(const glm::mat4& model, float gamma, const ScreenParameters
     _canvas.draw(shader, units);
 }
 
-ScreenParameters& Screen::parameters() {
-    return _parameters;
-}
+ScreenParameters& Screen::parameters() { return _parameters; }
 
-const ScreenParameters& Screen::parameters() const {
-    return _parameters;
-}
+const ScreenParameters& Screen::parameters() const { return _parameters; }

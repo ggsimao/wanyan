@@ -13,8 +13,8 @@
 // texture coordinates at attribute locations 0, 1 and 2.
 class BasicMesh : public Drawable {
   public:
-    BasicMesh(const std::vector<Vertex> &vertices,
-              const std::vector<GLuint> &indices, Material material);
+    BasicMesh(const std::vector<Vertex>& vertices,
+              const std::vector<GLuint>& indices, Material material);
 
     // Centred on the origin. Flat-shaded: each face has its own vertices and
     // normal.
@@ -26,24 +26,24 @@ class BasicMesh : public Drawable {
                             Material material = Material({.shininess = 1.0f}),
                             glm::vec2 texture_scale = {1.0, 1.0});
 
-    void draw(const ShaderProgramBinding &shader,
-              TextureUnits &units) const override;
-    void drawPlain(const ShaderProgramBinding &shader) const override;
-    void drawVertices(const ShaderProgramBinding &shader) const override;
-    void drawPositions(const ShaderProgramBinding &shader) const override;
-    void drawInstanced(const ShaderProgramBinding &shader, TextureUnits &units,
+    void draw(const ShaderProgramBinding& shader,
+              TextureUnits& units) const override;
+    void drawPlain(const ShaderProgramBinding& shader) const override;
+    void drawVertices(const ShaderProgramBinding& shader) const override;
+    void drawPositions(const ShaderProgramBinding& shader) const override;
+    void drawInstanced(const ShaderProgramBinding& shader, TextureUnits& units,
                        GLsizei instances) const override;
-    void drawPlainInstanced(const ShaderProgramBinding &shader,
+    void drawPlainInstanced(const ShaderProgramBinding& shader,
                             GLsizei instances) const override;
-    void drawVerticesInstanced(const ShaderProgramBinding &shader,
+    void drawVerticesInstanced(const ShaderProgramBinding& shader,
                                GLsizei instances) const override;
-    void drawPositionsInstanced(const ShaderProgramBinding &shader,
+    void drawPositionsInstanced(const ShaderProgramBinding& shader,
                                 GLsizei instances,
                                 GLsizei layers) const override;
     void
-    setupInstanceAttributes(const ArrayBuffer &instanceBuffer) const override;
+    setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const override;
 
-    const Material &material() const;
+    const Material& material() const;
 
   private:
     MeshBuffers _buffers;

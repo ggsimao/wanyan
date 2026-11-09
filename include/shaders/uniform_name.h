@@ -6,10 +6,11 @@
 static constexpr std::size_t BUFFER_SIZE = 64;
 
 class UniformName {
-public:
-    // Forwarding the same argument twice is normally a red flag, since the first use could move from it.
-    // It’s safe because the format functions only read their arguments. It’s also needed:
-    // it keeps the argument types matching fmt’s type, which plain args... wouldn’t.
+  public:
+    // Forwarding the same argument twice is normally a red flag, since the
+    // first use could move from it. It’s safe because the format functions only
+    // read their arguments. It’s also needed: it keeps the argument types
+    // matching fmt’s type, which plain args... wouldn’t.
     template <typename... Args>
     UniformName(std::format_string<Args...> fmt, Args&&... args) {
         _size = std::formatted_size(fmt, std::forward<Args>(args)...);
@@ -32,7 +33,8 @@ public:
         }
     }
     std::string_view view() const&& = delete;
-private:
+
+  private:
     char _buffer[BUFFER_SIZE];
     std::string _fallback;
     std::size_t _size;

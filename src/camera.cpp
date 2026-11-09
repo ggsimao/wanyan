@@ -3,7 +3,8 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 
-Camera::Camera(glm::vec3 init_pos, bool invert) : _inverted(invert), _pos(init_pos) {
+Camera::Camera(glm::vec3 init_pos, bool invert)
+    : _inverted(invert), _pos(init_pos) {
     if (init_pos == glm::vec3(0.0)) {
         _dir = glm::vec3(0.0, 0.0, 1.0);
     } else {
@@ -25,9 +26,9 @@ void Camera::translate(const glm::vec3& offset) {
     glm::vec3 camera_right = normalize(cross(global_up, _dir));
     glm::vec3 camera_up = normalize(cross(_dir, camera_right));
 
-    _pos -= sign * offset.z * _dir; // camera front
-    _pos -= sign * offset.x * camera_right; // camera sideways
-    _pos -= offset.y * camera_up; // camera vertical
+    _pos -= sign * offset.z * _dir;          // camera front
+    _pos -= sign * offset.x * camera_right;  // camera sideways
+    _pos -= offset.y * camera_up;            // camera vertical
 }
 
 void Camera::translateLongitudinal(float offset) {
@@ -44,12 +45,12 @@ void Camera::translateAxial(float offset) {
     glm::vec3 camera_right = normalize(cross(global_up, _dir));
     glm::vec3 camera_up = cross(_dir, camera_right);
 
-    _pos -= offset * camera_up; // camera vertical
+    _pos -= offset * camera_up;  // camera vertical
 }
 
 void Camera::translateFrontal(float offset) {
     float sign = _inverted ? -1.0 : 1.0;
-    _pos -= sign * offset * _dir; // camera front
+    _pos -= sign * offset * _dir;  // camera front
 }
 
 void Camera::translateForward(float offset) {
@@ -60,18 +61,12 @@ void Camera::translateForward(float offset) {
     _pos -= direction;
 }
 
-void Camera::translateVertical(float offset) {
-    _pos.y += offset;
-}
+void Camera::translateVertical(float offset) { _pos.y += offset; }
 
 void Camera::rotate(const glm::vec3& euler_angles) {
-    _pitch = std::min(
-        std::max(
-            _pitch + euler_angles.x,
-            -glm::pi<float>() / 2.0f + ANGLE_LOWER_BOUND
-        ),
-        glm::pi<float>() / 2.0f - ANGLE_LOWER_BOUND
-    );
+    _pitch = std::min(std::max(_pitch + euler_angles.x,
+                               -glm::pi<float>() / 2.0f + ANGLE_LOWER_BOUND),
+                      glm::pi<float>() / 2.0f - ANGLE_LOWER_BOUND);
     _yaw += euler_angles.y;
     _roll += euler_angles.z;
 
@@ -81,13 +76,9 @@ void Camera::rotate(const glm::vec3& euler_angles) {
 }
 
 void Camera::rotatePitch(float rotation) {
-    _pitch = std::min(
-        std::max(
-            _pitch + rotation,
-            -glm::pi<float>() / 2.0f + ANGLE_LOWER_BOUND
-        ),
-        glm::pi<float>() / 2.0f - ANGLE_LOWER_BOUND
-    );
+    _pitch = std::min(std::max(_pitch + rotation,
+                               -glm::pi<float>() / 2.0f + ANGLE_LOWER_BOUND),
+                      glm::pi<float>() / 2.0f - ANGLE_LOWER_BOUND);
 
     _dir.x = cos(_yaw) * cos(_pitch);
     _dir.y = sin(_pitch);
@@ -101,37 +92,21 @@ void Camera::rotateYaw(float rotation) {
     _dir.z = sin(_yaw) * cos(_pitch);
 }
 
-void Camera::rotateRoll(float rotation) {
-    _roll += rotation;
-}
+void Camera::rotateRoll(float rotation) { _roll += rotation; }
 
-void Camera::changeFOV(float offset) {
-    _fov += offset;
-}
+void Camera::changeFOV(float offset) { _fov += offset; }
 
-float Camera::pitch() const {
-    return _pitch;
-}
+float Camera::pitch() const { return _pitch; }
 
-float Camera::yaw() const {
-    return _yaw;
-}
+float Camera::yaw() const { return _yaw; }
 
-float Camera::roll() const {
-    return _roll;
-}
+float Camera::roll() const { return _roll; }
 
-float Camera::fov() const {
-    return _fov;
-}
+float Camera::fov() const { return _fov; }
 
-glm::vec3 Camera::pos() const {
-    return _pos;
-}
+glm::vec3 Camera::pos() const { return _pos; }
 
-glm::vec3 Camera::dir() const {
-    return _dir;
-}
+glm::vec3 Camera::dir() const { return _dir; }
 
 glm::mat4 Camera::lookAt() const {
     return glm::lookAt(_pos, (_dir + _pos), glm::vec3(0.0, 1.0, 0.0));

@@ -16,7 +16,7 @@ struct Range {
 // direction are re-randomized periodically, every `angularRate` and
 // `linearRate` ticks (0 means never).
 class RandomTransform {
-public:
+  public:
     RandomTransform(float angularStep, float linearStep, unsigned angularRate,
                     unsigned linearRate);
 
@@ -28,13 +28,11 @@ public:
         object.translate(randomOffset(x, y, z));
     }
 
-    template <typename T>
-    void rotate(Spatial<T>& object) const {
+    template <typename T> void rotate(Spatial<T>& object) const {
         object.applyRotation(_rotation);
     }
 
-    template <typename T>
-    void translate(Spatial<T>& object) const {
+    template <typename T> void translate(Spatial<T>& object) const {
         object.translate(_translation);
     }
 
@@ -45,7 +43,7 @@ public:
     void randomizeAxis();
     void randomizeDirection();
 
-private:
+  private:
     // A countdown that fires every `rate` ticks; rate 0 never fires.
     struct Countdown {
         unsigned rate;

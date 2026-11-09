@@ -9,7 +9,8 @@ namespace render_state {
     }
 
     StencilFunc::~StencilFunc() {
-        glStencilFunc(static_cast<GLenum>(_func), _ref, static_cast<GLuint>(_mask));
+        glStencilFunc(static_cast<GLenum>(_func), _ref,
+                      static_cast<GLuint>(_mask));
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +23,8 @@ namespace render_state {
     }
 
     StencilOp::~StencilOp() {
-        glStencilOp(static_cast<GLenum>(_stencilFail), static_cast<GLenum>(_depthFail),
+        glStencilOp(static_cast<GLenum>(_stencilFail),
+                    static_cast<GLenum>(_depthFail),
                     static_cast<GLenum>(_pass));
     }
 
