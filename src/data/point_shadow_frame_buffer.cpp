@@ -10,7 +10,8 @@
 PointShadowFrameBuffer::PointShadowFrameBuffer(GLsizei width, GLsizei height)
     : _texture(TextureType::ATTACHMENT), _width(width), _height(height) {
     glGenFramebuffers(1, &_id);
-    if (_id == 0) throw std::runtime_error("Couldn't make a shadow framebuffer");
+    if (_id == 0)
+        throw std::runtime_error("Couldn't make a shadow framebuffer");
 
     allocateDepthTexture();
 
@@ -29,18 +30,18 @@ PointShadowFrameBuffer::PointShadowFrameBuffer(GLsizei width, GLsizei height)
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
         release();
-        throw std::runtime_error(std::format("Could not complete shadow framebuffer (status {})",
-                                 status));
+        throw std::runtime_error(std::format(
+            "Could not complete shadow framebuffer (status {})", status));
     }
 }
 
-PointShadowFrameBuffer::PointShadowFrameBuffer(PointShadowFrameBuffer&& other) noexcept
-    : _texture(std::move(other._texture)),
-      _id(std::exchange(other._id, 0)),
-      _width(other._width),
-      _height(other._height) {}
+PointShadowFrameBuffer::PointShadowFrameBuffer(
+    PointShadowFrameBuffer &&other) noexcept
+    : _texture(std::move(other._texture)), _id(std::exchange(other._id, 0)),
+      _width(other._width), _height(other._height) {}
 
-PointShadowFrameBuffer& PointShadowFrameBuffer::operator=(PointShadowFrameBuffer&& other) noexcept {
+PointShadowFrameBuffer &
+PointShadowFrameBuffer::operator=(PointShadowFrameBuffer &&other) noexcept {
     if (this != &other) {
         release();
         _texture = std::move(other._texture);
@@ -51,9 +52,7 @@ PointShadowFrameBuffer& PointShadowFrameBuffer::operator=(PointShadowFrameBuffer
     return *this;
 }
 
-PointShadowFrameBuffer::~PointShadowFrameBuffer() {
-    release();
-}
+PointShadowFrameBuffer::~PointShadowFrameBuffer() { release(); }
 
 void PointShadowFrameBuffer::release() noexcept {
     if (_id != 0) {
@@ -62,21 +61,13 @@ void PointShadowFrameBuffer::release() noexcept {
     }
 }
 
-GLuint PointShadowFrameBuffer::id() const {
-    return _id;
-}
+GLuint PointShadowFrameBuffer::id() const { return _id; }
 
-GLsizei PointShadowFrameBuffer::width() const {
-    return _width;
-}
+GLsizei PointShadowFrameBuffer::width() const { return _width; }
 
-GLsizei PointShadowFrameBuffer::height() const {
-    return _height;
-}
+GLsizei PointShadowFrameBuffer::height() const { return _height; }
 
-const CubeMap& PointShadowFrameBuffer::texture() const {
-    return _texture;
-}
+const CubeMap &PointShadowFrameBuffer::texture() const { return _texture; }
 
 void PointShadowFrameBuffer::bindDraw() const {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _id);
@@ -97,16 +88,18 @@ void PointShadowFrameBuffer::clearReadBinding() {
 void PointShadowFrameBuffer::allocateDepthTexture() {
     CubeMapBinding tex(_texture);
     for (size_t i = 0; i < 6; i++) {
-        tex.image(i, GL_DEPTH_COMPONENT24, _width, _height, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        tex.image(i, GL_DEPTH_COMPONENT24, _width, _height, GL_DEPTH_COMPONENT,
+                  GL_FLOAT, nullptr);
     }
     tex.setFilters(GL_LINEAR, GL_LINEAR);
     tex.setWrapping(GL_CLAMP_TO_EDGE);
-    tex.setDepthComparison();
+    tex.enableDepthComparison();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PointShadowDrawBinding::PointShadowDrawBinding(const PointShadowFrameBuffer& sfbo)
+PointShadowDrawBinding::PointShadowDrawBinding(
+    const PointShadowFrameBuffer &sfbo)
     : PointShadowDrawBindingBase(sfbo) {
     glGetIntegerv(GL_VIEWPORT, _previousViewport);
     glViewport(0, 0, sfbo.width(), sfbo.height());
@@ -118,9 +111,10 @@ PointShadowDrawBinding::~PointShadowDrawBinding() {
                _previousViewport[3]);
 }
 
-void PointShadowDrawBinding::attachDepth(const CubeMap& texture) {
+void PointShadowDrawBinding::attachDepth(const CubeMap &texture) {
     assertActive();
-    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture.id(), 0);
+    glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, texture.id(),
+                         0);
 }
 
 void PointShadowDrawBinding::disableDrawBuffer() {

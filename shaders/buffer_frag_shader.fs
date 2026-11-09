@@ -18,7 +18,11 @@ struct Material {
     sampler2D diffuseTextures[NR_DIFFUSE_TEXTURES];
     sampler2D specularTextures[NR_SPECULAR_TEXTURES];
     sampler2D normalTexture;
+    sampler2D depthTexture;
     float shininess;
+    float heightScale;
+    bool clipParallaxEdges;
+    bool hasNormalMap;
     int loadedDiffuse;
     int loadedSpecular;
 };
@@ -27,10 +31,12 @@ uniform Material material;
 uniform vec3 outlineColor;
 
 void main() {
-    float texture_alpha = texture(material.diffuseTextures[0], fs_in.texCoords).a;
+    float texture_alpha =
+        texture(material.diffuseTextures[0], fs_in.texCoords).a;
     for (int i = 1; i < material.loadedDiffuse; i++) {
         texture_alpha =
-            mix(texture_alpha, 1.0, texture(material.diffuseTextures[i], fs_in.texCoords).a);
+            mix(texture_alpha, 1.0,
+                texture(material.diffuseTextures[i], fs_in.texCoords).a);
     }
 
     if (texture_alpha == 0) {
