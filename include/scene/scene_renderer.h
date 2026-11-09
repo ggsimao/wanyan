@@ -2,7 +2,6 @@
 
 #include "scene/scene.h"
 #include "shaders/point_shadow_shader.h"
-#include "textures/cube_map.h"
 
 class Camera;
 class ShaderProgram;
@@ -30,7 +29,7 @@ struct RenderOptions {
 // any Camera, so a mirror is just another compose() call with an inverted
 // camera. Sets every piece of GL state it relies on itself, and restores it.
 class SceneRenderer {
-public:
+  public:
     SceneRenderer(SceneShaders shaders, UniformBuffer& ubo);
 
     // Renders depth from each shadow-casting light into its shadow map.
@@ -45,15 +44,14 @@ public:
     RenderOptions& options();
     const RenderOptions& options() const;
 
-private:
+  private:
     void drawSkyboxes(const Scene& scene, TextureUnits& units) const;
-    void drawObjects(const Scene& scene, const Camera& camera, TextureUnits& units) const;
-    void drawShadowCasters(
-        const Scene& scene,
-        const ShaderProgramBinding& shader,
-        const std::optional<FixtureIndices>& fixtureIndices,
-        GLsizei layers
-    ) const;
+    void drawObjects(const Scene& scene, const Camera& camera,
+                     TextureUnits& units) const;
+    void drawShadowCasters(const Scene& scene,
+                           const ShaderProgramBinding& shader,
+                           const std::optional<FixtureIndices>& fixtureIndices,
+                           GLsizei layers) const;
 
     SceneShaders _shaders;
     UniformBuffer& _ubo;

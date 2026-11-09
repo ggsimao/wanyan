@@ -23,12 +23,10 @@ void generate_line(vec3 pos, vec3 normal) {
     gl_Position = projViewMat * vec4(pos, 1.0);
     EmitVertex();
 
-    gl_Position = projViewMat * (vec4(pos, 1.0) +
-                             normalize(vec4(normal, 0.0)) * MAGNITUDE);
+    gl_Position = projViewMat *
+                  (vec4(pos, 1.0) + normalize(vec4(normal, 0.0)) * MAGNITUDE);
     EmitVertex();
     EndPrimitive();
 }
 
-void main() {
-    generate_line(gs_in[0].pos, gs_in[0].normal);
-}
+void main() { generate_line(gs_in[0].pos, gs_in[0].normal); }

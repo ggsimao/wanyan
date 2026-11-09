@@ -6,7 +6,5 @@ namespace render_state {
         glCullFace(face);
     }
 
-    CullFace::~CullFace() {
-        glCullFace(static_cast<GLenum>(_previous));
-    }
+    CullFace::~CullFace() { glCullFace(static_cast<GLenum>(_previous)); }
 }  // namespace render_state

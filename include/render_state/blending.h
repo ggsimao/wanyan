@@ -8,13 +8,13 @@ namespace render_state {
     // factors, including separate alpha factors if some code set them. Doesn't
     // enable blending: see Capability.
     class BlendFunc {
-    public:
+      public:
         BlendFunc(GLenum source, GLenum destination);
         ~BlendFunc();
         BlendFunc(const BlendFunc&) = delete;
         BlendFunc& operator=(const BlendFunc&) = delete;
 
-    private:
+      private:
         GLint _sourceRgb = GL_ONE;
         GLint _destinationRgb = GL_ZERO;
         GLint _sourceAlpha = GL_ONE;

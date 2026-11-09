@@ -3,8 +3,7 @@
 #include <cassert>
 #include <cstddef>
 
-template <typename T>
-inline constexpr bool restoreBindingOnExit = true;
+template <typename T> inline constexpr bool restoreBindingOnExit = true;
 
 // Binds an object for the duration of a scope, and restores whatever was bound
 // before when the scope ends.
@@ -23,17 +22,16 @@ inline constexpr bool restoreBindingOnExit = true;
 // - A type opts out of restoring on exit by specializing restoreBindingOnExit
 //   to false. The element array buffer does: its binding is part of the VAO's
 //   state, so undoing it would detach the VAO's index buffer.
-template <typename T,
-          void (T::*Bind)() const = &T::bind,
+template <typename T, void (T::*Bind)() const = &T::bind,
           void (*Clear)() = &T::clearBinding>
 class ScopedBinding {
-public:
+  public:
     ScopedBinding(const ScopedBinding&) = delete;
     ScopedBinding& operator=(const ScopedBinding&) = delete;
     ScopedBinding(ScopedBinding&&) = delete;
     ScopedBinding& operator=(ScopedBinding&&) = delete;
 
-protected:
+  protected:
     explicit ScopedBinding(const T& obj) : _obj(&obj), _outer(s_active) {
         s_active = this;
         apply();
@@ -47,18 +45,22 @@ protected:
         assert(s_active == this && "Bindings destroyed out of order");
         s_active = _outer;
         if constexpr (restoreBindingOnExit<T>) {
-            if (_outer) _outer->apply();
-            else        Clear();
+            if (_outer)
+                _outer->apply();
+            else
+                Clear();
         }
     }
     void assertActive() const {
         assert(s_active == this && "Using a binding that has been superseded");
     }
 
-private:
+  private:
     void apply() const {
-        if (_obj) (_obj->*Bind)();
-        else      Clear();
+        if (_obj)
+            (_obj->*Bind)();
+        else
+            Clear();
     }
 
     const T* _obj;

@@ -9,7 +9,8 @@ ControllerHub::ControllerHub() {
     _handler.connect(_platform);
 }
 
-void ControllerHub::update(float frameMilliseconds, const ControlTargets& targets) {
+void ControllerHub::update(float frameMilliseconds,
+                           const ControlTargets& targets) {
     // Before polling: key presses copy the current speed when they arrive.
     _camera->setSpeeds(frameMilliseconds);
     _handler.waitEvent();

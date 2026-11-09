@@ -10,7 +10,9 @@ namespace render_state {
     }
 
     BlendFunc::~BlendFunc() {
-        glBlendFuncSeparate(static_cast<GLenum>(_sourceRgb), static_cast<GLenum>(_destinationRgb),
-                            static_cast<GLenum>(_sourceAlpha), static_cast<GLenum>(_destinationAlpha));
+        glBlendFuncSeparate(static_cast<GLenum>(_sourceRgb),
+                            static_cast<GLenum>(_destinationRgb),
+                            static_cast<GLenum>(_sourceAlpha),
+                            static_cast<GLenum>(_destinationAlpha));
     }
 }  // namespace render_state

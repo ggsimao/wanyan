@@ -12,12 +12,14 @@
 #include <vector>
 
 namespace {
-    // Saves tightly packed RGB pixels, choosing the format from the file extension.
-    void saveImage(const std::filesystem::path& path, GLsizei width, GLsizei height,
-                const unsigned char* pixels) {
+    // Saves tightly packed RGB pixels, choosing the format from the file
+    // extension.
+    void saveImage(const std::filesystem::path& path, GLsizei width,
+                   GLsizei height, const unsigned char* pixels) {
         std::string ext = path.extension().string();
-        std::transform(ext.begin(), ext.end(), ext.begin(),
-                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::transform(
+            ext.begin(), ext.end(), ext.begin(),
+            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
         const std::string file = path.string();
 
         // OpenGL's origin is bottom-left; image files expect top-left.
@@ -25,7 +27,8 @@ namespace {
 
         int ok = 0;
         if (ext == ".png") {
-            ok = stbi_write_png(file.c_str(), width, height, 3, pixels, width * 3);
+            ok = stbi_write_png(file.c_str(), width, height, 3, pixels,
+                                width * 3);
         } else if (ext == ".jpg" || ext == ".jpeg") {
             ok = stbi_write_jpg(file.c_str(), width, height, 3, pixels, 90);
         } else if (ext == ".bmp") {
@@ -33,10 +36,12 @@ namespace {
         } else if (ext == ".tga") {
             ok = stbi_write_tga(file.c_str(), width, height, 3, pixels);
         } else {
-            throw std::runtime_error(std::format("Unsupported image format: {}", ext));
+            throw std::runtime_error(
+                std::format("Unsupported image format: {}", ext));
         }
         if (!ok) {
-            throw std::runtime_error(std::format("Failed to save image: {}", file));
+            throw std::runtime_error(
+                std::format("Failed to save image: {}", file));
         }
     }
 }  // namespace
@@ -46,7 +51,8 @@ namespace {
 FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
     : _texture(clampSamples(samples)), _width(width), _height(height) {
     glGenFramebuffers(1, &_id);
-    if (_id == 0) throw std::runtime_error("Couldn't make a framebuffer");
+    if (_id == 0)
+        throw std::runtime_error("Couldn't make a framebuffer");
 
     GLenum status;
     {
@@ -57,7 +63,8 @@ FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
 
         {
             RenderBufferBinding rbo(_rbo);
-            rbo.createDepthStencilStorageMultisample(_width, _height, _texture.samples());
+            rbo.createDepthStencilStorageMultisample(_width, _height,
+                                                     _texture.samples());
         }
         bound.attachDepthStencil(_rbo);
 
@@ -65,19 +72,18 @@ FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
     }  // previous draw binding restored here, before any throw
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        // A throwing constructor never runs the destructor, so free the FBO here.
-        // _texture and _rbo are fully constructed and clean up after themselves.
+        // A throwing constructor never runs the destructor, so free the FBO
+        // here. _texture and _rbo are fully constructed and clean up after
+        // themselves.
         release();
-        throw std::runtime_error(std::format("Could not complete framebuffer (status {})",
-                                 status));
+        throw std::runtime_error(
+            std::format("Could not complete framebuffer (status {})", status));
     }
 }
 
 FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
-    : _texture(std::move(other._texture)),
-      _rbo(std::move(other._rbo)),
-      _id(std::exchange(other._id, 0)),
-      _width(other._width),
+    : _texture(std::move(other._texture)), _rbo(std::move(other._rbo)),
+      _id(std::exchange(other._id, 0)), _width(other._width),
       _height(other._height) {}
 
 FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
@@ -92,9 +98,7 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
     return *this;
 }
 
-FrameBuffer::~FrameBuffer() {
-    release();
-}
+FrameBuffer::~FrameBuffer() { release(); }
 
 void FrameBuffer::release() noexcept {
     if (_id != 0) {
@@ -103,21 +107,13 @@ void FrameBuffer::release() noexcept {
     }
 }
 
-GLuint FrameBuffer::id() const {
-    return _id;
-}
+GLuint FrameBuffer::id() const { return _id; }
 
-GLsizei FrameBuffer::width() const {
-    return _width;
-}
+GLsizei FrameBuffer::width() const { return _width; }
 
-GLsizei FrameBuffer::height() const {
-    return _height;
-}
+GLsizei FrameBuffer::height() const { return _height; }
 
-const Texture2DMultisample& FrameBuffer::texture() const {
-    return _texture;
-}
+const Texture2DMultisample& FrameBuffer::texture() const { return _texture; }
 
 void FrameBuffer::bindDraw() const {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _id);
@@ -148,10 +144,12 @@ void FrameBuffer::writeToFile(const std::filesystem::path& path) const {
     auto to = DrawFrameBufferBinding::screen();
     gl::blit(from, to, _width, _height);
 
-    std::vector<unsigned char> pixels(static_cast<std::size_t>(_width) * _height * 3);
+    std::vector<unsigned char> pixels(static_cast<std::size_t>(_width) *
+                                      _height * 3);
     {
         auto from = ReadFrameBufferBinding::screen();
-        from.readPixels(_width, _height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+        from.readPixels(_width, _height, GL_RGB, GL_UNSIGNED_BYTE,
+                        pixels.data());
     }
 
     saveImage(path, _width, _height, pixels.data());
@@ -163,16 +161,17 @@ DrawFrameBufferBinding DrawFrameBufferBinding::screen() {
     return DrawFrameBufferBinding(nullptr);
 }
 
-void DrawFrameBufferBinding::attachColor(const Texture2DMultisample& texture, GLenum attachment) {
+void DrawFrameBufferBinding::attachColor(const Texture2DMultisample& texture,
+                                         GLenum attachment) {
     assertActive();
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, attachment, GL_TEXTURE_2D_MULTISAMPLE,
-                           texture.id(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, attachment,
+                           GL_TEXTURE_2D_MULTISAMPLE, texture.id(), 0);
 }
 
 void DrawFrameBufferBinding::attachDepthStencil(const RenderBuffer& rbo) {
     assertActive();
-    glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
-                              rbo.id());
+    glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                              GL_RENDERBUFFER, rbo.id());
 }
 
 void DrawFrameBufferBinding::clear(const glm::vec4& color, GLbitfield mask) {
@@ -192,7 +191,8 @@ ReadFrameBufferBinding ReadFrameBufferBinding::screen() {
     return ReadFrameBufferBinding(nullptr);
 }
 
-void ReadFrameBufferBinding::readPixels(GLsizei width, GLsizei height, GLenum format, GLenum type,
+void ReadFrameBufferBinding::readPixels(GLsizei width, GLsizei height,
+                                        GLenum format, GLenum type,
                                         void* out) const {
     assertActive();
     // Tightly packed rows: without this, any width where a row isn't a multiple
@@ -206,10 +206,12 @@ void ReadFrameBufferBinding::readPixels(GLsizei width, GLsizei height, GLenum fo
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void gl::blit(const ReadFrameBufferBinding& from, const DrawFrameBufferBinding& to,
-              GLsizei width, GLsizei height, GLbitfield mask, GLenum filter) {
+void gl::blit(const ReadFrameBufferBinding& from,
+              const DrawFrameBufferBinding& to, GLsizei width, GLsizei height,
+              GLbitfield mask, GLenum filter) {
     from.assertActive();
     to.assertActive();
-    // Resolving a multisampled source requires identical source and destination sizes.
+    // Resolving a multisampled source requires identical source and destination
+    // sizes.
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, mask, filter);
 }

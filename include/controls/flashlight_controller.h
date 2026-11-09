@@ -5,11 +5,11 @@
 
 // Toggles a spotlight with the F key.
 class FlashlightController : public Slot, public Controller<Spotlight> {
-public:
+  public:
     void onSignal(const SignalType& signal) override;
     void processSignals(Spotlight& spotlight) override;
 
-private:
+  private:
     void onKeyPressed(const SDL_Keysym& key);
 
     // Starts off, as in the Rust version: the first frame switches the

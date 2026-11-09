@@ -1,7 +1,7 @@
 #pragma once
 
-#include "controls/controls.h"
 #include "camera.h"
+#include "controls/controls.h"
 
 // WASD moves, Space and Left Ctrl move up and down, the mouse looks around
 // and the wheel zooms.
@@ -9,13 +9,14 @@
 // Keyboard movement is scaled by the frame time, so speed doesn't depend on
 // frame rate. Mouse look and zoom aren't: a mouse movement or a wheel notch
 // is already a fixed amount, however long the frame took.
-class CameraController: public Slot, public Controller<Camera> {
-public:
+class CameraController : public Slot, public Controller<Camera> {
+  public:
     // Call every frame, before input is polled.
     void setSpeeds(float frameMilliseconds);
     void onSignal(const SignalType& signal) override;
     void processSignals(Camera& obj) override;
-private:
+
+  private:
     void onKeyPressed(const SDL_Keysym& key);
     void onKeyReleased(const SDL_Keysym& key);
     void setHeld(const SDL_Keysym& key, bool held);

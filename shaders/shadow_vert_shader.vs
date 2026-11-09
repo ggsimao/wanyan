@@ -11,7 +11,7 @@ uniform int excludedInstance = -1;
 
 void main() {
     if (gl_InstanceID == excludedInstance) {
-        gl_Position = vec4(2.0, 2.0, 2.0, 1.0); // outside the clip volume
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);  // outside the clip volume
     } else {
         gl_Position = projViewMat * (modelMat * (aInstModel * vec4(aPos, 1.0)));
     }

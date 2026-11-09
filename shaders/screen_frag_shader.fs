@@ -22,7 +22,9 @@ void main() {
             vec4 sampleColor = vec4(0);
             for (int i = 0; i < KERNEL_SIZE; i++) {
                 for (int j = 0; j < KERNEL_SIZE; j++) {
-                    ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0), tex_size - ivec2(1, 1));
+                    ivec2 texelCoords =
+                        clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0),
+                              tex_size - ivec2(1, 1));
                     sampleColor += texelFetch(screenTexture, texelCoords, s) *
                                    kernel[i][j];
                 }
@@ -33,7 +35,8 @@ void main() {
     } else if (applyFilter && !applyMSAA) {
         for (int i = 0; i < KERNEL_SIZE; i++) {
             for (int j = 0; j < KERNEL_SIZE; j++) {
-                ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0), tex_size - ivec2(1, 1));
+                ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1),
+                                          ivec2(0, 0), tex_size - ivec2(1, 1));
                 fragColor +=
                     texelFetch(screenTexture, texelCoords, 0) * kernel[i][j];
             }

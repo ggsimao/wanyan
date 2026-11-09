@@ -25,11 +25,12 @@ struct ScreenParameters {
 
 // An offscreen view of the scene: renders into its own multisampled
 // framebuffer, then presents it to the window or onto another screen through
-// a fullscreen canvas and the screen shader (MSAA resolve, border filter, gamma).
-// The canvas is drawn in clip space, so the screen shader takes its transform
-// as a plain `model` uniform rather than from the scene's Matrices block.
+// a fullscreen canvas and the screen shader (MSAA resolve, border filter,
+// gamma). The canvas is drawn in clip space, so the screen shader takes its
+// transform as a plain `model` uniform rather than from the scene's Matrices
+// block.
 class Screen {
-public:
+  public:
     Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
            const ShaderProgram& shader);
     // Deleted because _canvas points to framebuffer
@@ -44,7 +45,8 @@ public:
 
     // Draws this screen's image into another screen's framebuffer, scaled and
     // offset in clip space (e.g. 0.3 and (0.5, 0.5) for a corner inset).
-    void drawOnAnother(const Screen& other, float scaling, const glm::vec2& offset) const;
+    void drawOnAnother(const Screen& other, float scaling,
+                       const glm::vec2& offset) const;
 
     // Presents this screen's image in the window.
     void drawOnScreen() const;
@@ -52,8 +54,9 @@ public:
     ScreenParameters& parameters();
     const ScreenParameters& parameters() const;
 
-private:
-    void present(const glm::mat4& model, float gamma, const ScreenParameters& effects) const;
+  private:
+    void present(const glm::mat4& model, float gamma,
+                 const ScreenParameters& effects) const;
 
     FrameBuffer _framebuffer;
     Canvas _canvas;

@@ -5,8 +5,8 @@
 
 #include <GL/glew.h>
 #include <glm/fwd.hpp>
-#include <glm/vec3.hpp>
 #include <glm/gtc/color_space.hpp>
+#include <glm/vec3.hpp>
 
 #include <cstddef>
 #include <optional>
@@ -19,7 +19,8 @@ struct FixtureIndices {
     size_t instanceID;
 };
 
-// Color and intensity for every light, plus an on/off switch, and indices to its potential fixture.
+// Color and intensity for every light, plus an on/off switch, and indices to
+// its potential fixture.
 struct Light {
     glm::vec3 color{0.0f};
     float intensity;
@@ -28,7 +29,8 @@ struct Light {
 
     // What the shader should receive: black while the light is switched off.
     glm::vec3 effectiveRadiance() const {
-        return on ? glm::convertSRGBToLinear(color) * intensity : glm::vec3(0.0f);
+        return on ? glm::convertSRGBToLinear(color) * intensity
+                  : glm::vec3(0.0f);
     }
 };
 

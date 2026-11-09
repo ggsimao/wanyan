@@ -6,9 +6,7 @@ namespace render_state {
         glDepthFunc(func);
     }
 
-    DepthFunc::~DepthFunc() {
-        glDepthFunc(static_cast<GLenum>(_previous));
-    }
+    DepthFunc::~DepthFunc() { glDepthFunc(static_cast<GLenum>(_previous)); }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -17,7 +15,5 @@ namespace render_state {
         glDepthMask(writeDepth ? GL_TRUE : GL_FALSE);
     }
 
-    DepthMask::~DepthMask() {
-        glDepthMask(_previous);
-    }
+    DepthMask::~DepthMask() { glDepthMask(_previous); }
 }  // namespace render_state

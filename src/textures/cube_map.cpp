@@ -11,7 +11,7 @@
 
 namespace {
     struct StbiDeleter {
-        void operator()(unsigned char *pixels) const {
+        void operator()(unsigned char* pixels) const {
             stbi_image_free(pixels);
         }
     };
@@ -26,17 +26,17 @@ CubeMap::CubeMap(TextureType type) : _type(type) {
         throw std::runtime_error("Couldn't make a cube map");
 }
 
-CubeMap::CubeMap(TextureType type, const CubeMapPaths &paths, GLenum wrapping)
+CubeMap::CubeMap(TextureType type, const CubeMapPaths& paths, GLenum wrapping)
     : CubeMap(type) {
     load(paths);
     CubeMapBinding cube(*this);
     cube.setWrapping(wrapping);
 }
 
-CubeMap::CubeMap(CubeMap &&other) noexcept
+CubeMap::CubeMap(CubeMap&& other) noexcept
     : _id(std::exchange(other._id, 0)), _type(other._type) {}
 
-CubeMap &CubeMap::operator=(CubeMap &&other) noexcept {
+CubeMap& CubeMap::operator=(CubeMap&& other) noexcept {
     if (this != &other) {
         release();
         _id = std::exchange(other._id, 0);
@@ -54,7 +54,7 @@ void CubeMap::release() noexcept {
     }
 }
 
-void CubeMap::load(const CubeMapPaths &paths) {
+void CubeMap::load(const CubeMapPaths& paths) {
     // stb's flip flag is global and Texture2D::load sets it, so set it
     // explicitly: cube map faces must not be flipped.
     stbi_set_flip_vertically_on_load(0);
@@ -89,7 +89,7 @@ void CubeMap::clearBinding() { glBindTexture(GL_TEXTURE_CUBE_MAP, 0); }
 
 void CubeMapBinding::image(unsigned face, GLint internalFormat, GLsizei width,
                            GLsizei height, GLenum format, GLenum type,
-                           const void *data) {
+                           const void* data) {
     assertActive();
     assert(face < 6 && "A cube map has six faces");
     glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, internalFormat,

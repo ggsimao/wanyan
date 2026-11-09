@@ -1,9 +1,9 @@
 #pragma once
 
+#include <SDL2/SDL_events.h>
 #include <memory>
 #include <variant>
 #include <vector>
-#include <SDL2/SDL_events.h>
 
 struct SignalKeyPressed {
     SDL_Keysym code;
@@ -23,36 +23,30 @@ struct SignalQuit {};
 struct SignalFocusLost {};
 struct SignalCaptureRequested {};
 using SignalType =
-    std::variant<
-        SignalKeyPressed,
-        SignalKeyReleased,
-        SignalMouseMoved,
-        SignalMouseScrolled,
-        SignalQuit,
-        SignalFocusLost,
-        SignalCaptureRequested
-    >;
+    std::variant<SignalKeyPressed, SignalKeyReleased, SignalMouseMoved,
+                 SignalMouseScrolled, SignalQuit, SignalFocusLost,
+                 SignalCaptureRequested>;
 
 class Slot {
-public:
+  public:
     virtual ~Slot() = default;
     virtual void onSignal(const SignalType& signal) = 0;
 };
 
 class SignalHandler {
-public:
+  public:
     SignalHandler();
     ~SignalHandler();
     void connect(const std::shared_ptr<Slot>& slot);
     void waitEvent();
-private:
+
+  private:
     void emit(const SignalType& signal_value);
     std::vector<std::weak_ptr<Slot>> _slots;
 };
 
-template<typename O>
-class Controller {
-public:
+template <typename O> class Controller {
+  public:
     virtual ~Controller() = default;
     virtual void processSignals(O& obj) = 0;
 };

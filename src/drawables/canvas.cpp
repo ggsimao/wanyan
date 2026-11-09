@@ -10,16 +10,16 @@ namespace {
         const Geometry quad = quadGeometry(2.0f);
         // The screen shader reads texture coordinates at location 1, not 2.
         return MeshBuffers(quad.vertices, quad.indices,
-                        {
-                            VERTEX_ATTRIBUTES[POS_LOCATION],
-                            VERTEX_ATTRIBUTES[TEX_COORDS_LOCATION]
-                        });
+                           {VERTEX_ATTRIBUTES[POS_LOCATION],
+                            VERTEX_ATTRIBUTES[TEX_COORDS_LOCATION]});
     }
 }  // namespace
 
-Canvas::Canvas(const Texture2DMultisample& texture) : _buffers(makeCanvasBuffers()), _texture(&texture) {}
+Canvas::Canvas(const Texture2DMultisample& texture)
+    : _buffers(makeCanvasBuffers()), _texture(&texture) {}
 
-void Canvas::draw(const ShaderProgramBinding& shader, TextureUnits& units) const {
+void Canvas::draw(const ShaderProgramBinding& shader,
+                  TextureUnits& units) const {
     TextureDrawBinding screenTexture(units, *_texture);
     shader.setTexture("screenTexture", screenTexture);
     shader.setInt("sampleCount", _texture->samples());

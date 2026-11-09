@@ -1,13 +1,13 @@
 #pragma once
 
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/vector_angle.hpp>
-#include <glm/ext/matrix_transform.hpp>
 
 inline const float ANGLE_LOWER_BOUND = 0.001;
 
 class Camera {
-public:
+  public:
     Camera(glm::vec3 init_pos, bool invert = false);
     void translate(const glm::vec3& offset);
     void translateLongitudinal(float offset);
@@ -30,7 +30,8 @@ public:
     Camera invert() const;
 
     friend class CameraController;
-private:
+
+  private:
     bool _inverted;
     glm::vec3 _pos = glm::vec3(0.0), _dir = glm::vec3(0.0);
     float _pitch = 0.0, _yaw = 0.0, _roll = 0.0, _fov = 1.0;

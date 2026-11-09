@@ -10,23 +10,26 @@ namespace {
     static bool seeded = false;
 
     std::mt19937& engine() {
-        assert(seeded && "RandomTransform::setSeed must be called before generating random values");
+        assert(seeded && "RandomTransform::setSeed must be called before "
+                         "generating random values");
         static std::mt19937 instance;
         return instance;
     }
 
     float randomIn(Range range) {
-        return std::uniform_real_distribution<float>(range.min, range.max)(engine());
+        return std::uniform_real_distribution<float>(range.min,
+                                                     range.max)(engine());
     }
 
-    // A direction picked uniformly over the sphere. Rejection sampling: points in
-    // the cube outside the unit ball, or too close to the centre to normalize
-    // safely, are retried. (Normalizing any point of the cube, as the Rust
-    // version did, favours the cube's corners and can divide by zero.)
+    // A direction picked uniformly over the sphere. Rejection sampling: points
+    // in the cube outside the unit ball, or too close to the centre to
+    // normalize safely, are retried. (Normalizing any point of the cube, as the
+    // Rust version did, favours the cube's corners and can divide by zero.)
     glm::vec3 randomUnitVector() {
         std::uniform_real_distribution<float> coordinate(-1.0f, 1.0f);
         while (true) {
-            const glm::vec3 v(coordinate(engine()), coordinate(engine()), coordinate(engine()));
+            const glm::vec3 v(coordinate(engine()), coordinate(engine()),
+                              coordinate(engine()));
             const float lengthSquared = glm::dot(v, v);
             if (lengthSquared > 1e-6f && lengthSquared <= 1.0f) {
                 return v / std::sqrt(lengthSquared);
@@ -40,11 +43,10 @@ void RandomTransform::setSeed(std::uint32_t seed) {
     engine().seed(seed);
 }
 
-RandomTransform::RandomTransform(float angularStep, float linearStep, unsigned angularRate,
-                                 unsigned linearRate)
+RandomTransform::RandomTransform(float angularStep, float linearStep,
+                                 unsigned angularRate, unsigned linearRate)
     : _angularStep(angularStep),
-      _linearStep(linearStep),
-      _axisCountdown{angularRate, angularRate},
+      _linearStep(linearStep), _axisCountdown{angularRate, angularRate},
       _directionCountdown{linearRate, linearRate} {
     randomizeAxis();
     randomizeDirection();

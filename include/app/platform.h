@@ -21,9 +21,10 @@ struct PlatformOptions {
 // In debug builds (NDEBUG undefined) it also requests a debug context and
 // prints OpenGL's error and warning messages to stderr as they happen.
 class Platform {
-public:
+  public:
     // Throws std::runtime_error, with SDL's or GLEW's message, on failure.
-    Platform(const char* title, int width, int height, const PlatformOptions& options);
+    Platform(const char* title, int width, int height,
+             const PlatformOptions& options);
     ~Platform();
     Platform(const Platform&) = delete;
     Platform& operator=(const Platform&) = delete;
@@ -37,7 +38,8 @@ public:
     const GpuFeatures& gpuFeatures() const;
 
     friend class PlatformController;
-private:
+
+  private:
     void release() noexcept;
     void setMouseCapture(bool captured);
 

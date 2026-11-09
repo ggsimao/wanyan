@@ -19,9 +19,8 @@
 // which is uploaded to the GPU byte for byte: a vtable pointer would add 8
 // bytes to its layout. It's also what the Rust version did, since functions
 // took `impl Spatial` (static dispatch), not `dyn Spatial`.
-template <typename Derived>
-class Spatial {
-public:
+template <typename Derived> class Spatial {
+  public:
     glm::mat3 cofactorDetMatrix() const {
         auto det = glm::determinant(self().model());
         auto cofactor = glm::mat3(self().model());
@@ -51,9 +50,7 @@ public:
         applyScaling(glm::scale(glm::mat4(1.0f), factors));
     }
 
-    void applyScaling(const glm::mat4& scaling) {
-        applyAboutPosition(scaling);
-    }
+    void applyScaling(const glm::mat4& scaling) { applyAboutPosition(scaling); }
 
     void translate(const glm::vec3& offset) {
         glm::mat4 model = self().model();
@@ -61,7 +58,7 @@ public:
         self().setModel(model);
     }
 
-protected:
+  protected:
     // Only usable as a base; never destroyed or copied through Spatial itself.
     Spatial() = default;
     ~Spatial() = default;
@@ -70,7 +67,7 @@ protected:
     Spatial(Spatial&&) = default;
     Spatial& operator=(Spatial&&) = default;
 
-private:
+  private:
     // Moves the object to the origin, applies the transform, and moves it back,
     // so rotations and scalings don't swing it around the world origin.
     void applyAboutPosition(const glm::mat4& transform) {

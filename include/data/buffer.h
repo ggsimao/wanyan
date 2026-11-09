@@ -4,9 +4,8 @@
 
 #include <GL/glew.h>
 
-template <GLenum target>
-class Buffer {
-public:
+template <GLenum target> class Buffer {
+  public:
     Buffer();
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
@@ -16,7 +15,8 @@ public:
     GLuint id() const;
     void bind() const;
     static void clearBinding();
-private:
+
+  private:
     void release() noexcept;
     GLuint _id = 0;
 };

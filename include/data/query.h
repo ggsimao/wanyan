@@ -2,9 +2,8 @@
 
 #include <GL/glew.h>
 
-template <GLenum target>
-class Query {
-public:
+template <GLenum target> class Query {
+  public:
     Query();
     Query(const Query&) = delete;
     Query& operator=(const Query&) = delete;
@@ -17,7 +16,8 @@ public:
     // this once available() returns true; otherwise the CPU waits until the
     // GPU has finished the measured commands, stalling the pipeline.
     GLuint64 result() const;
-private:
+
+  private:
     void release() noexcept;
     GLuint _id = 0;
 };
@@ -25,9 +25,8 @@ private:
 // Runs a query over the GL commands issued during its lifetime: begins it on
 // construction, ends it on destruction. Queries of the same target can't
 // nest: starting a second one while another is active is a GL error.
-template <GLenum target>
-class QueryScope {
-public:
+template <GLenum target> class QueryScope {
+  public:
     explicit QueryScope(const Query<target>& query);
     QueryScope(const QueryScope&) = delete;
     QueryScope& operator=(const QueryScope&) = delete;

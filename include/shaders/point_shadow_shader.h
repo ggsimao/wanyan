@@ -13,21 +13,22 @@
 // program with a geometry shader emits the faces itself and needs one draw
 // per instance. The named constructors set both, so they can't disagree.
 class PointShadowShader {
-public:
+  public:
     // gl_Layer written by the vertex shader (ARB_shader_viewport_layer_array,
     // core in OpenGL 4.6): each instance is drawn once per cube face.
-    static PointShadowShader layered(std::string label, const std::filesystem::path& vertex,
+    static PointShadowShader layered(std::string label,
+                                     const std::filesystem::path& vertex,
                                      const std::filesystem::path& fragment);
     // A geometry shader emits all six faces: each instance is drawn once.
-    static PointShadowShader withGeometryShader(std::string label,
-                                                const std::filesystem::path& vertex,
-                                                const std::filesystem::path& geometry,
-                                                const std::filesystem::path& fragment);
+    static PointShadowShader
+    withGeometryShader(std::string label, const std::filesystem::path& vertex,
+                       const std::filesystem::path& geometry,
+                       const std::filesystem::path& fragment);
 
     const ShaderProgram& program() const;
     GLsizei layers() const;
 
-private:
+  private:
     PointShadowShader(ShaderProgram program, GLsizei layers);
 
     ShaderProgram _program;

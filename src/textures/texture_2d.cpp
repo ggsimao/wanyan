@@ -14,7 +14,7 @@ namespace {
     // Owns the pixels returned by stbi_load and frees them however the scope
     // ends.
     struct StbiDeleter {
-        void operator()(unsigned char *pixels) const {
+        void operator()(unsigned char* pixels) const {
             stbi_image_free(pixels);
         }
     };
@@ -24,7 +24,7 @@ namespace {
     inline constexpr unsigned char FLAT_NORMAL_DATA[4] = {128, 128, 255, 255};
     inline constexpr unsigned char FLAT_DEPTH_DATA[1] = {0};
 
-    unsigned char toByte(const float &value) {
+    unsigned char toByte(const float& value) {
         return static_cast<unsigned char>(
             std::lround(std::clamp(value, 0.0f, 1.0f) * 255.0f));
     }
@@ -38,7 +38,7 @@ Texture2D::Texture2D(TextureType type) : _type(type) {
         throw std::runtime_error("Couldn't make a texture");
 }
 
-Texture2D::Texture2D(TextureType type, const std::filesystem::path &path,
+Texture2D::Texture2D(TextureType type, const std::filesystem::path& path,
                      GLenum wrapping)
     : Texture2D(type) {
     load(path);
@@ -47,10 +47,10 @@ Texture2D::Texture2D(TextureType type, const std::filesystem::path &path,
     tex.setFilters(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 }
 
-Texture2D::Texture2D(Texture2D &&other) noexcept
+Texture2D::Texture2D(Texture2D&& other) noexcept
     : _id(std::exchange(other._id, 0)), _type(other._type) {}
 
-Texture2D &Texture2D::operator=(Texture2D &&other) noexcept {
+Texture2D& Texture2D::operator=(Texture2D&& other) noexcept {
     if (this != &other) {
         release();
         _id = std::exchange(other._id, 0);
@@ -68,7 +68,7 @@ void Texture2D::release() noexcept {
     }
 }
 
-void Texture2D::load(const std::filesystem::path &path) {
+void Texture2D::load(const std::filesystem::path& path) {
     int width = 0, height = 0, channels = 0;
     stbi_set_flip_vertically_on_load(1);
     StbiPixels data(
@@ -101,7 +101,7 @@ void Texture2D::load(const std::filesystem::path &path) {
     tex.generateMipmap();
 }
 
-Texture2D Texture2D::fromColor(TextureType type, const glm::vec3 &color) {
+Texture2D Texture2D::fromColor(TextureType type, const glm::vec3& color) {
     Texture2D texture(type);
     const unsigned char data[4] = {
         toByte(color.r),
@@ -202,7 +202,7 @@ void Texture2D::clearBinding() { glBindTexture(GL_TEXTURE_2D, 0); }
 
 void Texture2DBinding::image(GLint internalFormat, GLsizei width,
                              GLsizei height, GLenum format, GLenum type,
-                             const void *data) {
+                             const void* data) {
     assertActive();
     glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
                  type, data);
@@ -234,7 +234,7 @@ void Texture2DBinding::setWrappingOnAxis(GLenum axis, GLenum wrapping) {
     glTexParameteri(GL_TEXTURE_2D, axis, static_cast<GLint>(wrapping));
 }
 
-void Texture2DBinding::setBorderColor(const glm::vec4 &color) {
+void Texture2DBinding::setBorderColor(const glm::vec4& color) {
     assertActive();
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &color[0]);
 }

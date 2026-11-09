@@ -16,7 +16,8 @@ struct Geometry {
 // its own normal; texture coordinates span each face.
 Geometry cubeGeometry(float side, glm::vec2 texture_scale = {1.0, 1.0});
 
-// In the XY plane, centred on the origin, with a front (+Z) and a back (-Z) face.
+// In the XY plane, centred on the origin, with a front (+Z) and a back (-Z)
+// face.
 Geometry squareGeometry(float side, glm::vec2 texture_scale = {1.0, 1.0});
 
 // Like squareGeometry, but front face only. quadGeometry(2.0f) covers

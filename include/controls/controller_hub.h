@@ -27,22 +27,27 @@ struct ControlTargets {
 // need it. Call update() once per frame: input is polled every frame, so
 // movement scaled by frame time never skips a frame.
 class ControllerHub {
-public:
+  public:
     // Connects the input-driven controllers to the signal handler.
     ControllerHub();
 
     void update(float frameMilliseconds, const ControlTargets& targets);
 
-private:
+  private:
     SignalHandler _handler;
     // shared_ptr because the handler keeps weak_ptrs to its slots.
-    std::shared_ptr<ProgramController> _program = std::make_shared<ProgramController>();
-    std::shared_ptr<CameraController> _camera = std::make_shared<CameraController>();
-    std::shared_ptr<FlashlightController> _flashlight = std::make_shared<FlashlightController>();
+    std::shared_ptr<ProgramController> _program =
+        std::make_shared<ProgramController>();
+    std::shared_ptr<CameraController> _camera =
+        std::make_shared<CameraController>();
+    std::shared_ptr<FlashlightController> _flashlight =
+        std::make_shared<FlashlightController>();
     std::shared_ptr<RenderOptionsController> _renderOptions =
         std::make_shared<RenderOptionsController>();
-    std::shared_ptr<ScreenController> _screen = std::make_shared<ScreenController>();
+    std::shared_ptr<ScreenController> _screen =
+        std::make_shared<ScreenController>();
     // Driven by the frame, not input, so it isn't connected to the handler.
     RandomTransformController _randomTransforms;
-    std::shared_ptr<PlatformController> _platform = std::make_shared<PlatformController>();
+    std::shared_ptr<PlatformController> _platform =
+        std::make_shared<PlatformController>();
 };

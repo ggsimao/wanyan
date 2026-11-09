@@ -11,13 +11,13 @@
 #include <string>
 
 namespace {
-    std::runtime_error sdlError(const std::string &what) {
+    std::runtime_error sdlError(const std::string& what) {
         return std::runtime_error(std::format("{}: {}", what, SDL_GetError()));
     }
 }  // namespace
 
-Platform::Platform(const char *title, int width, int height,
-                   const PlatformOptions &options)
+Platform::Platform(const char* title, int width, int height,
+                   const PlatformOptions& options)
     : _options(options), _width(width), _height(height) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         throw sdlError("Couldn't initialize SDL");
@@ -51,10 +51,9 @@ Platform::Platform(const char *title, int width, int height,
         glewExperimental = GL_TRUE;  // needed for core profiles
         const GLenum glewStatus = glewInit();
         if (glewStatus != GLEW_OK) {
-            throw std::runtime_error(
-                std::format("Couldn't initialize GLEW: {}",
-                            reinterpret_cast<const char *>(
-                                glewGetErrorString(glewStatus))));
+            throw std::runtime_error(std::format(
+                "Couldn't initialize GLEW: {}",
+                reinterpret_cast<const char*>(glewGetErrorString(glewStatus))));
         }
 
         // glewInit queries extensions the old way, which a core profile
@@ -119,7 +118,7 @@ int Platform::width() const { return _width; }
 
 int Platform::height() const { return _height; }
 
-const GpuFeatures &Platform::gpuFeatures() const { return _gpuFeatures; }
+const GpuFeatures& Platform::gpuFeatures() const { return _gpuFeatures; }
 
 void Platform::setMouseCapture(bool captured) {
     _options.mouseCaptured = captured;

@@ -14,9 +14,10 @@
 //         mat4 normal;      // offset 128
 //     };
 //
-// Allocated on construction; bindBase() connects it to the block's binding point.
+// Allocated on construction; bindBase() connects it to the block's binding
+// point.
 class UniformBuffer {
-public:
+  public:
     explicit UniformBuffer(GLuint bindingPoint);
 
     GLuint id() const;
@@ -30,7 +31,7 @@ public:
     void setProjViewMat(const glm::mat4& proj_view);
     void setNormalMat(const glm::mat4& normal);
 
-private:
+  private:
     void setMat(GLintptr offset, const glm::mat4& value);
 
     UniformBufferObject _buffer;
@@ -39,8 +40,9 @@ private:
 
 // Configuration guard for uniform buffers.
 class UniformBufferBinding : ScopedBinding<UniformBufferObject> {
-public:
-    explicit UniformBufferBinding(const UniformBufferObject& buffer) : ScopedBinding(buffer) {}
+  public:
+    explicit UniformBufferBinding(const UniformBufferObject& buffer)
+        : ScopedBinding(buffer) {}
 
     void allocate(GLsizeiptr size, GLenum usage);
     void subData(GLintptr offset, GLsizeiptr size, const void* data);

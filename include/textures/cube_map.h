@@ -16,11 +16,11 @@ class CubeMap {
   public:
     explicit CubeMap(TextureType type);
     // Loads the six faces and sets the wrapping mode.
-    CubeMap(TextureType type, const CubeMapPaths &paths, GLenum wrapping);
-    CubeMap(const CubeMap &) = delete;
-    CubeMap &operator=(const CubeMap &) = delete;
-    CubeMap(CubeMap &&other) noexcept;
-    CubeMap &operator=(CubeMap &&other) noexcept;
+    CubeMap(TextureType type, const CubeMapPaths& paths, GLenum wrapping);
+    CubeMap(const CubeMap&) = delete;
+    CubeMap& operator=(const CubeMap&) = delete;
+    CubeMap(CubeMap&& other) noexcept;
+    CubeMap& operator=(CubeMap&& other) noexcept;
     ~CubeMap();
 
     GLuint id() const;
@@ -31,7 +31,7 @@ class CubeMap {
 
   private:
     void release() noexcept;
-    void load(const CubeMapPaths &paths);
+    void load(const CubeMapPaths& paths);
 
     GLuint _id = 0;
     TextureType _type;
@@ -42,11 +42,11 @@ class CubeMap {
 // create one while texture units are being assigned for a draw call.
 class CubeMapBinding : ScopedBinding<CubeMap> {
   public:
-    explicit CubeMapBinding(const CubeMap &cubeMap) : ScopedBinding(cubeMap) {}
+    explicit CubeMapBinding(const CubeMap& cubeMap) : ScopedBinding(cubeMap) {}
 
     // face: 0..5, in the order documented on CubeMapPaths.
     void image(unsigned face, GLint internalFormat, GLsizei width,
-               GLsizei height, GLenum format, GLenum type, const void *data);
+               GLsizei height, GLenum format, GLenum type, const void* data);
     void generateMipmap();
     void setFilters(GLenum minFilter, GLenum magFilter);
     void setWrapping(GLenum wrapping);
