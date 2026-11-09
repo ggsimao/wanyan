@@ -95,11 +95,23 @@ out vec4 fragColor;
 vec2 parallaxMapping(vec2 texCoords, vec3 viewDirTangent, vec2 dx, vec2 dy) {
     const float MIN_LAYERS = 8.0;
     const float MAX_LAYERS = 32.0;
-    // More layers at grazing angles, where the ray crosses more of the map.
-    float layerCount = mix(MAX_LAYERS, MIN_LAYERS, abs(viewDirTangent.z));
+
+    vec2 depthSize = vec2(textureSize(material.depthTexture, 0));
+    float lod = log2(max(length(dx * depthSize), length(dy * depthSize)));
+    // 1 up close, 0 from mip level 4 on, with a smooth transition from level 2.
+    float fade = 1.0 - smoothstep(2.0, 4.0, lod);
+    if (fade <= 0.0) {
+        return texCoords;  // too far for the relief to show
+    }
+
+    // More layers at grazing angles, where the ray crosses more of the map, and
+    // fewer as the relief fades with distance; always at least one.
+    float layerCount =
+        max(mix(MAX_LAYERS, MIN_LAYERS, abs(viewDirTangent.z)) * fade, 1.0);
     float layerDepth = 1.0 / layerCount;
     // The full shift at depth 1, split evenly across the layers.
-    vec2 shift = viewDirTangent.xy / viewDirTangent.z * material.heightScale;
+    vec2 shift =
+        viewDirTangent.xy / viewDirTangent.z * material.heightScale * fade;
     vec2 layerShift = shift / layerCount;
 
     // Step down until the ray is below the surface.
