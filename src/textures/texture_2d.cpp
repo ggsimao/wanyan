@@ -238,3 +238,10 @@ void Texture2DBinding::setBorderColor(const glm::vec4 &color) {
     assertActive();
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &color[0]);
 }
+
+void Texture2DBinding::enableDepthComparison(GLenum function) {
+    assertActive();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE,
+                    GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, function);
+}

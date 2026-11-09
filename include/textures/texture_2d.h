@@ -60,4 +60,5 @@ class Texture2DBinding : ScopedBinding<Texture2D> {
     void setWrapping(GLenum wrapping);
     void setWrappingOnAxis(GLenum axis, GLenum wrapping);
     void setBorderColor(const glm::vec4 &color);
+    void enableDepthComparison(GLenum function = GL_LEQUAL);
 };
