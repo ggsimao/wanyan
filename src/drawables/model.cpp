@@ -27,7 +27,7 @@ namespace {
         // temporary, as in ModelLoader(path).load().
         std::vector<BasicMesh> load() && {
             Assimp::Importer importer;
-            const aiScene *scene = importer.ReadFile(
+            const aiScene* scene = importer.ReadFile(
                 _path.string(),
                 aiProcess_Triangulate | aiProcess_CalcTangentSpace |
                     aiProcess_GenSmoothNormals | aiProcess_TransformUVCoords);
@@ -46,7 +46,7 @@ namespace {
       private:
         // Like the Rust version, node transformations are ignored: every mesh
         // is placed as stored in the file.
-        void processNode(const aiNode &node, const aiScene &scene) {
+        void processNode(const aiNode& node, const aiScene& scene) {
             for (unsigned i = 0; i < node.mNumMeshes; ++i) {
                 _meshes.push_back(
                     processMesh(*scene.mMeshes[node.mMeshes[i]], scene));
@@ -56,20 +56,20 @@ namespace {
             }
         }
 
-        BasicMesh processMesh(const aiMesh &mesh, const aiScene &scene) {
+        BasicMesh processMesh(const aiMesh& mesh, const aiScene& scene) {
             assert(mesh.HasNormals() &&
                    "Import flags must include aiProcess_GenSmoothNormals");
 
             std::vector<Vertex> vertices;
             vertices.reserve(mesh.mNumVertices);
-            const aiVector3D *texCoords =
+            const aiVector3D* texCoords =
                 mesh.mTextureCoords[0];  // null if the mesh has none
 
             for (unsigned i = 0; i < mesh.mNumVertices; ++i) {
-                const aiVector3D &p = mesh.mVertices[i];
+                const aiVector3D& p = mesh.mVertices[i];
                 Vertex vertex(glm::vec3(p.x, p.y, p.z));
 
-                const aiVector3D &n = mesh.mNormals[i];
+                const aiVector3D& n = mesh.mNormals[i];
                 vertex.normal = glm::vec3(n.x, n.y, n.z);
 
                 if (!mesh.HasTangentsAndBitangents()) {
@@ -104,7 +104,7 @@ namespace {
             std::vector<GLuint> indices;
             indices.reserve(static_cast<std::size_t>(mesh.mNumFaces) * 3);
             for (unsigned f = 0; f < mesh.mNumFaces; ++f) {
-                const aiFace &face = mesh.mFaces[f];
+                const aiFace& face = mesh.mFaces[f];
                 indices.insert(indices.end(), face.mIndices,
                                face.mIndices + face.mNumIndices);
             }
@@ -114,7 +114,7 @@ namespace {
                 loadMaterial(*scene.mMaterials[mesh.mMaterialIndex]));
         }
 
-        Material loadMaterial(const aiMaterial &material) {
+        Material loadMaterial(const aiMaterial& material) {
             std::vector<TexturePtr> diffuse = loadTextures(
                 material, aiTextureType_DIFFUSE, TextureType::DIFFUSE);
             if (diffuse.empty()) {
@@ -138,7 +138,7 @@ namespace {
                              .shininess = shininess(material)});
         }
 
-        TexturePtr loadFirstTexture(const aiMaterial &material,
+        TexturePtr loadFirstTexture(const aiMaterial& material,
                                     aiTextureType aiType, TextureType type) {
             auto count = material.GetTextureCount(aiType);
             if (count == 0) {
@@ -154,7 +154,7 @@ namespace {
                            type);
         }
 
-        std::vector<TexturePtr> loadTextures(const aiMaterial &material,
+        std::vector<TexturePtr> loadTextures(const aiMaterial& material,
                                              aiTextureType aiType,
                                              TextureType type) {
             std::vector<TexturePtr> textures;
@@ -170,7 +170,7 @@ namespace {
         // Loads a texture once per model; later requests share the same one.
         // Fixes the Rust version, which skipped already-loaded textures and
         // left the second mesh using them without any.
-        TexturePtr texture(const std::filesystem::path &path,
+        TexturePtr texture(const std::filesystem::path& path,
                            TextureType type) {
             const std::string key =
                 std::format("{}:{}", static_cast<int>(type), path.string());
@@ -183,8 +183,8 @@ namespace {
             return loaded;
         }
 
-        static TexturePtr colorTexture(const aiMaterial &material,
-                                       const char *key, unsigned type,
+        static TexturePtr colorTexture(const aiMaterial& material,
+                                       const char* key, unsigned type,
                                        unsigned index,
                                        TextureType textureType) {
             aiColor3D color(0.0f, 0.0f,
@@ -194,8 +194,8 @@ namespace {
                 textureType, glm::vec3(color.r, color.g, color.b)));
         }
 
-        static float shininess(const aiMaterial &material) {
-            constexpr float DEFAULT_SHININESS = 32.0f;
+        static float shininess(const aiMaterial& material) {
+            constexpr float DEFAULT_SHININESS = 0.0f;
             float value = 0.0f;
             if (material.Get(AI_MATKEY_SHININESS, value) == AI_SUCCESS &&
                 value > 0.0f) {
@@ -204,8 +204,8 @@ namespace {
             return DEFAULT_SHININESS;
         }
 
-        static float heightScale(const aiMaterial &material) {
-            constexpr float DEFAULT_HEIGHT_SCALE = 0.05f;
+        static float heightScale(const aiMaterial& material) {
+            constexpr float DEFAULT_HEIGHT_SCALE = 0.0f;
             float value = 0.0f;
             if (material.Get(AI_MATKEY_BUMPSCALING, value) == AI_SUCCESS &&
                 value > 0.0f) {
@@ -222,66 +222,66 @@ namespace {
     };
 }  // namespace
 
-Model::Model(const std::filesystem::path &path)
+Model::Model(const std::filesystem::path& path)
     : _meshes(ModelLoader(path).load()) {}
 
-void Model::draw(const ShaderProgramBinding &shader,
-                 TextureUnits &units) const {
-    for (const BasicMesh &mesh : _meshes) {
+void Model::draw(const ShaderProgramBinding& shader,
+                 TextureUnits& units) const {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.draw(shader, units);
     }
 }
 
-void Model::drawPlain(const ShaderProgramBinding &shader) const {
-    for (const BasicMesh &mesh : _meshes) {
+void Model::drawPlain(const ShaderProgramBinding& shader) const {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawPlain(shader);
     }
 }
 
-void Model::drawVertices(const ShaderProgramBinding &shader) const {
-    for (const BasicMesh &mesh : _meshes) {
+void Model::drawVertices(const ShaderProgramBinding& shader) const {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawVertices(shader);
     }
 }
 
-void Model::drawPositions(const ShaderProgramBinding &shader) const {
-    for (const BasicMesh &mesh : _meshes) {
+void Model::drawPositions(const ShaderProgramBinding& shader) const {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawPositions(shader);
     }
 }
 
-void Model::drawInstanced(const ShaderProgramBinding &shader,
-                          TextureUnits &units, GLsizei instances) const {
-    for (const BasicMesh &mesh : _meshes) {
+void Model::drawInstanced(const ShaderProgramBinding& shader,
+                          TextureUnits& units, GLsizei instances) const {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawInstanced(shader, units, instances);
     }
 }
 
-void Model::drawPlainInstanced(const ShaderProgramBinding &shader,
+void Model::drawPlainInstanced(const ShaderProgramBinding& shader,
                                GLsizei instances) const {
-    for (const BasicMesh &mesh : _meshes) {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawPlainInstanced(shader, instances);
     }
 }
 
-void Model::drawVerticesInstanced(const ShaderProgramBinding &shader,
+void Model::drawVerticesInstanced(const ShaderProgramBinding& shader,
                                   GLsizei instances) const {
-    for (const BasicMesh &mesh : _meshes) {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawVerticesInstanced(shader, instances);
     }
 }
 
-void Model::drawPositionsInstanced(const ShaderProgramBinding &shader,
+void Model::drawPositionsInstanced(const ShaderProgramBinding& shader,
                                    GLsizei instances, GLsizei layers) const {
-    for (const BasicMesh &mesh : _meshes) {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.drawPositionsInstanced(shader, instances, layers);
     }
 }
 
-void Model::setupInstanceAttributes(const ArrayBuffer &instanceBuffer) const {
-    for (const BasicMesh &mesh : _meshes) {
+void Model::setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const {
+    for (const BasicMesh& mesh : _meshes) {
         mesh.setupInstanceAttributes(instanceBuffer);
     }
 }
 
-const std::vector<BasicMesh> &Model::meshes() const { return _meshes; }
+const std::vector<BasicMesh>& Model::meshes() const { return _meshes; }
