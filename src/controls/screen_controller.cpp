@@ -4,7 +4,7 @@
 
 void ScreenController::onKeyPressed(const SDL_Keysym& key) {
     switch (key.sym) {
-        case SDLK_e:
+        case SDLK_x:
             _filterOn = !_filterOn;
             break;
         case SDLK_r:

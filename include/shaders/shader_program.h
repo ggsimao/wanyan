@@ -1,5 +1,6 @@
 #pragma once
 
+#include "components/lighting.h"
 #include "scoped_binding.h"
 #include "shaders/shader.h"
 #include "shaders/uniform_cache.h"
@@ -15,11 +16,23 @@
 #include <initializer_list>
 #include <string>
 
-struct Attenuation;
-struct DirectionalLight;
-struct Light;
-struct PointLight;
-struct Spotlight;
+struct DirLightData {
+    const Light* light;
+    glm::vec3 dir;
+    glm::mat4 space;
+};
+
+struct SpotlightData {
+    const Light* light;
+    glm::vec3 pos, dir;
+    glm::mat4 space;
+};
+
+struct PointLightData {
+    const Light* light;
+    glm::vec3 pos;
+    float nearPlane, farPlane;
+};
 
 // A linked shader program. Linked (or throws, with the linker's log) on
 // construction. Uniforms are set through a ShaderProgramBinding, because
@@ -89,10 +102,12 @@ class ShaderProgramBinding : ScopedBinding<ShaderProgram> {
 
     // Shadow maps aren't set here: bind them with a TextureDrawBinding and
     // pass it to setTexture(name + ".shadow_map", ...).
-    void setDirectionalLight(std::string_view name,
-                             const DirectionalLight& light) const;
-    void setPointLight(std::string_view name, const PointLight& light) const;
-    void setSpotlight(std::string_view name, const Spotlight& light) const;
+    void setDirectionalLightData(std::string_view name,
+                                 const DirLightData& light) const;
+    void setPointLightData(std::string_view name,
+                           const PointLightData& light) const;
+    void setSpotlightData(std::string_view name,
+                          const SpotlightData& light) const;
 
   private:
     void setLightRadiance(std::string_view name, const Light& colors) const;

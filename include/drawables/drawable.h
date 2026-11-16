@@ -40,7 +40,7 @@ class Drawable {
 
     // Default: nothing to set up for things that don't support instancing.
     virtual void
-    setupInstanceAttributes(const ArrayBuffer& /*instanceBuffer*/) const {}
+    bindInstanceBuffer(const ArrayBuffer& /*instanceBuffer*/) const {}
 
   protected:
     // Protected so a Drawable can't be copied or moved through a base

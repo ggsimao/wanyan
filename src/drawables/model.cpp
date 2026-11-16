@@ -25,7 +25,7 @@ namespace {
 
         // Single use: hands its meshes over, so it can only be called on a
         // temporary, as in ModelLoader(path).load().
-        std::vector<BasicMesh> load() && {
+        std::vector<std::shared_ptr<const BasicMesh>> load() && {
             Assimp::Importer importer;
             const aiScene* scene = importer.ReadFile(
                 _path.string(),
@@ -48,8 +48,8 @@ namespace {
         // is placed as stored in the file.
         void processNode(const aiNode& node, const aiScene& scene) {
             for (unsigned i = 0; i < node.mNumMeshes; ++i) {
-                _meshes.push_back(
-                    processMesh(*scene.mMeshes[node.mMeshes[i]], scene));
+                _meshes.emplace_back(std::make_shared<const BasicMesh>(
+                    processMesh(*scene.mMeshes[node.mMeshes[i]], scene)));
             }
             for (unsigned i = 0; i < node.mNumChildren; ++i) {
                 processNode(*node.mChildren[i], scene);
@@ -218,7 +218,7 @@ namespace {
         std::filesystem::path _path;
         std::filesystem::path _directory;
         std::unordered_map<std::string, TexturePtr> _textures;
-        std::vector<BasicMesh> _meshes;
+        std::vector<std::shared_ptr<const BasicMesh>> _meshes;
     };
 }  // namespace
 
@@ -227,61 +227,63 @@ Model::Model(const std::filesystem::path& path)
 
 void Model::draw(const ShaderProgramBinding& shader,
                  TextureUnits& units) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.draw(shader, units);
+    for (const auto& mesh : _meshes) {
+        mesh->draw(shader, units);
     }
 }
 
 void Model::drawPlain(const ShaderProgramBinding& shader) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawPlain(shader);
+    for (const auto& mesh : _meshes) {
+        mesh->drawPlain(shader);
     }
 }
 
 void Model::drawVertices(const ShaderProgramBinding& shader) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawVertices(shader);
+    for (const auto& mesh : _meshes) {
+        mesh->drawVertices(shader);
     }
 }
 
 void Model::drawPositions(const ShaderProgramBinding& shader) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawPositions(shader);
+    for (const auto& mesh : _meshes) {
+        mesh->drawPositions(shader);
     }
 }
 
 void Model::drawInstanced(const ShaderProgramBinding& shader,
                           TextureUnits& units, GLsizei instances) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawInstanced(shader, units, instances);
+    for (const auto& mesh : _meshes) {
+        mesh->drawInstanced(shader, units, instances);
     }
 }
 
 void Model::drawPlainInstanced(const ShaderProgramBinding& shader,
                                GLsizei instances) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawPlainInstanced(shader, instances);
+    for (const auto& mesh : _meshes) {
+        mesh->drawPlainInstanced(shader, instances);
     }
 }
 
 void Model::drawVerticesInstanced(const ShaderProgramBinding& shader,
                                   GLsizei instances) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawVerticesInstanced(shader, instances);
+    for (const auto& mesh : _meshes) {
+        mesh->drawVerticesInstanced(shader, instances);
     }
 }
 
 void Model::drawPositionsInstanced(const ShaderProgramBinding& shader,
                                    GLsizei instances, GLsizei layers) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.drawPositionsInstanced(shader, instances, layers);
+    for (const auto& mesh : _meshes) {
+        mesh->drawPositionsInstanced(shader, instances, layers);
     }
 }
 
-void Model::setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const {
-    for (const BasicMesh& mesh : _meshes) {
-        mesh.setupInstanceAttributes(instanceBuffer);
+void Model::bindInstanceBuffer(const ArrayBuffer& instanceBuffer) const {
+    for (const auto& mesh : _meshes) {
+        mesh->bindInstanceBuffer(instanceBuffer);
     }
 }
 
-const std::vector<BasicMesh>& Model::meshes() const { return _meshes; }
+const std::vector<std::shared_ptr<const BasicMesh>>& Model::meshes() const {
+    return _meshes;
+}

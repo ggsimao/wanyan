@@ -21,7 +21,7 @@ namespace {
         MODEL_MAT_LOCATION +
         MODEL_COLUMNS;  // mat3: 3 consecutive vec3 locations
     constexpr GLuint NORMAL_COLUMNS = 3;
-    constexpr auto STRIDE = static_cast<GLsizei>(sizeof(Instance));
+    constexpr GLuint INSTANCE_BINDING = VERTEX_ATTRIBUTES.size();
 
     // Orders positions by x, then y, then z, so glm::vec3 can be a std::map
     // key.
@@ -50,21 +50,13 @@ namespace {
         LayeredAttributes(VertexArrayBinding& vao, GLsizei layers)
             : _vao(vao), _layers(layers) {
             if (layers > 1) {
-                for (GLuint i = MODEL_MAT_LOCATION;
-                     i < MODEL_MAT_LOCATION + MODEL_COLUMNS + NORMAL_COLUMNS;
-                     ++i) {
-                    vao.attribDivisor(i, layers);
-                }
+                vao.bindingDivisor(INSTANCE_BINDING, layers);
             }
         }
         ~LayeredAttributes() {  // doesn't query like other guards, fine since
                                 // it's only used here
             if (_layers > 1) {
-                for (GLuint i = MODEL_MAT_LOCATION;
-                     i < MODEL_MAT_LOCATION + MODEL_COLUMNS + NORMAL_COLUMNS;
-                     ++i) {
-                    _vao.attribDivisor(i, 1);
-                }
+                _vao.bindingDivisor(INSTANCE_BINDING, 1);
             }
         }
         LayeredAttributes(const LayeredAttributes&) = delete;
@@ -80,12 +72,14 @@ namespace {
     template <typename Field>
     void uploadAttribute(const std::vector<Vertex>& vertices,
                          Field Vertex::*member, GLuint location,
-                         VertexArrayBinding::ArrayBufferBinding&& abo) {
+                         VertexArrayBinding& vao, ArrayBuffer& abo) {
         assert(location < VERTEX_ATTRIBUTES.size());
         auto view = vertices | std::views::transform(member);
         std::vector<Field> attrVector(view.begin(), view.end());
-        abo.bufferData(attrVector, GL_STATIC_DRAW);
-        abo.attribPointer(location, Field::length(), GL_FLOAT, 0, 0);
+        vao.bindABO(abo).bufferData(attrVector, GL_STATIC_DRAW);
+        vao.attribFormat(location, Field::length(), GL_FLOAT, 0);
+        vao.attribBinding(location, location);
+        vao.bindVertexBuffer(location, abo, 0, sizeof(Field));
     }
 }  // namespace
 
@@ -101,13 +95,26 @@ MeshBuffers::MeshBuffers(const std::vector<Vertex>& vertices,
     for (const VertexAttribute& attribute : attributes) {
         std::visit(
             [&](auto member) {
-                uploadAttribute(vertices, member, attribute.location,
-                                vao.bindABO(_streams[attribute.location]));
+                uploadAttribute(vertices, member, attribute.location, vao,
+                                _streams[attribute.location]);
             },
             attribute.member);
     }
     auto ebo = vao.bindEBO(_ebo);
     ebo.bufferData(combinedIndices(vertices, indices), GL_STATIC_DRAW);
+    for (GLuint column = 0; column < MODEL_COLUMNS; ++column) {
+        auto location = MODEL_MAT_LOCATION + column;
+        vao.attribFormat(location, 4, GL_FLOAT,
+                         Instance::modelOffset() + column * sizeof(glm::vec4));
+        vao.attribBinding(location, INSTANCE_BINDING);
+    }
+    for (GLuint column = 0; column < NORMAL_COLUMNS; ++column) {
+        auto location = NORMAL_MAT_LOCATION + column;
+        vao.attribFormat(location, 3, GL_FLOAT,
+                         Instance::normalOffset() + column * sizeof(glm::vec3));
+        vao.attribBinding(location, INSTANCE_BINDING);
+    }
+    vao.bindingDivisor(INSTANCE_BINDING, 1);
 }
 
 void MeshBuffers::draw() const {
@@ -143,22 +150,9 @@ void MeshBuffers::drawPositionsInstanced(GLsizei instances,
                               _indexCount);
 }
 
-void MeshBuffers::setupInstanceAttributes(
-    const ArrayBuffer& instanceBuffer) const {
+void MeshBuffers::bindInstanceBuffer(const ArrayBuffer& instanceBuffer) const {
     VertexArrayBinding vao(_vao);
-    auto ibo = vao.bindABO(instanceBuffer);
-    for (GLuint column = 0; column < MODEL_COLUMNS; ++column) {
-        ibo.attribPointer(MODEL_MAT_LOCATION + column, 4, GL_FLOAT, STRIDE,
-                          Instance::modelOffset() + column * sizeof(glm::vec4));
-        vao.attribDivisor(MODEL_MAT_LOCATION + column,
-                          1);  // advance once per instance
-    }
-    for (GLuint column = 0; column < NORMAL_COLUMNS; ++column) {
-        ibo.attribPointer(NORMAL_MAT_LOCATION + column, 3, GL_FLOAT, STRIDE,
-                          Instance::normalOffset() +
-                              column * sizeof(glm::vec3));
-        vao.attribDivisor(NORMAL_MAT_LOCATION + column, 1);
-    }
+    vao.bindVertexBuffer(INSTANCE_BINDING, instanceBuffer, 0, sizeof(Instance));
 }
 
 GLsizei MeshBuffers::indexCount() const { return _indexCount; }

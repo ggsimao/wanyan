@@ -15,6 +15,7 @@ class BasicMesh : public Drawable {
   public:
     BasicMesh(const std::vector<Vertex>& vertices,
               const std::vector<GLuint>& indices, Material material);
+    BasicMesh(std::shared_ptr<const MeshBuffers> buffers, Material material);
 
     // Centred on the origin. Flat-shaded: each face has its own vertices and
     // normal.
@@ -40,12 +41,12 @@ class BasicMesh : public Drawable {
     void drawPositionsInstanced(const ShaderProgramBinding& shader,
                                 GLsizei instances,
                                 GLsizei layers) const override;
-    void
-    setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const override;
+    void bindInstanceBuffer(const ArrayBuffer& instanceBuffer) const override;
 
+    const std::shared_ptr<const MeshBuffers>& buffers() const;
     const Material& material() const;
 
   private:
-    MeshBuffers _buffers;
+    std::shared_ptr<const MeshBuffers> _buffers;
     Material _material;
 };

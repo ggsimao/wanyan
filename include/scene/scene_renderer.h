@@ -1,9 +1,13 @@
 #pragma once
 
+#include "data/point_shadow_frame_buffer.h"
+#include "data/shadow_frame_buffer.h"
+#include "scene/entity.h"
+#include "scene/frame_data.h"
 #include "scene/scene.h"
 #include "shaders/point_shadow_shader.h"
+#include <map>
 
-class Camera;
 class ShaderProgram;
 class ShaderProgramBinding;
 class TextureUnits;
@@ -19,9 +23,22 @@ struct SceneShaders {
     const ShaderProgram& debug;
 };
 
+struct SceneParameters {
+    const Transform& cameraTransform;
+    const glm::vec3& ambientColor = glm::vec3(0.0f);
+};
+
 // Choices about how to draw, not about what's in the scene.
 struct RenderOptions {
     bool visualizeNormals = false;
+};
+
+struct ShadowMapBindings {
+    const TextureDrawBinding<Texture2D>& dirShadows;
+    const TextureDrawBinding<Texture2D>& spotShadows;
+    const TextureDrawBinding<CubeMap>& pointShadows;
+    const TextureDrawBinding<Texture2D>& dummyShadow;
+    const TextureDrawBinding<CubeMap>& dummyPointShadow;
 };
 
 // How a Scene is drawn: the shadow pass, the skybox pass and the object
@@ -39,21 +56,49 @@ class SceneRenderer {
 
     // Draws the scene's skyboxes and objects, as seen by the camera, into the
     // currently bound draw framebuffer.
-    void compose(const Scene& scene, const Camera& camera) const;
+    void compose(const Scene& scene, EntityHandle activeCamera);
 
     RenderOptions& options();
     const RenderOptions& options() const;
 
+    void updateFrameData(const Scene& scene);
+
   private:
+    // Calls process(entity) for every active entity,
+    // depth-first. Inactive entities are skipped with their whole subtree.
+    template <typename F>
+    void forEachActive(const Entity& entity, F& process) const {
+        if (!entity.activeSelf()) {
+            return;
+        }
+        process(entity);
+        for (const Entity* child : entity.getChildren()) {
+            forEachActive(*child, process);
+        }
+    }
+
+    void setLightingUniforms(const ShaderProgramBinding& shader,
+                             ShadowMapBindings shadows) const;
+
+    void bindIdentityInstance(const BasicMesh& part) const;
+
     void drawSkyboxes(const Scene& scene, TextureUnits& units) const;
-    void drawObjects(const Scene& scene, const Camera& camera,
+    void drawObjects(const SceneParameters& parameters,
                      TextureUnits& units) const;
     void drawShadowCasters(const Scene& scene,
                            const ShaderProgramBinding& shader,
-                           const std::optional<FixtureIndices>& fixtureIndices,
+                           const std::optional<EntityHandle>& fixture,
                            GLsizei layers) const;
 
+    mutable std::unordered_map<const BasicMesh*, ArrayBuffer> _instanceBuffers;
+    FrameData _frameData;
     SceneShaders _shaders;
     UniformBuffer& _ubo;
     RenderOptions _options;
+    std::map<EntityHandle, ShadowFrameBuffer> _dirShadowMaps,
+        _spotShadowMaps;  // directional, spot
+    std::map<EntityHandle, PointShadowFrameBuffer> _pointShadowMaps;  // point
+    ShadowFrameBuffer _dummyShadow{1, 1};  // 2D depth, compare mode on
+    PointShadowFrameBuffer _dummyPointShadow{1,
+                                             1};  // cube depth, compare mode on
 };

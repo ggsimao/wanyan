@@ -14,11 +14,11 @@ Screen::Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
     _parameters.clearColor = clearColor;
 }
 
-void Screen::drawOnFramebuffer(const SceneRenderer& renderer,
-                               const Scene& scene, const Camera& camera) const {
+void Screen::drawOnFramebuffer(SceneRenderer& renderer, const Scene& scene,
+                               EntityHandle cameraHandle) const {
     DrawFrameBufferBinding target(_framebuffer);
     target.clear(_parameters.clearColor);
-    renderer.compose(scene, camera);
+    renderer.compose(scene, cameraHandle);
 }
 
 void Screen::drawOnAnother(const Screen& other, float scaling,

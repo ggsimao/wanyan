@@ -4,8 +4,6 @@ in VERTEX {
     vec3 normal;
     vec2 texCoords;
     mat3 TBN;
-    vec4 dirLightSpaceFragPos;
-    vec4 spotlightSpaceFragPos;
 }
 fs_in;
 

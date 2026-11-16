@@ -12,6 +12,7 @@ struct MaterialParameters {
     float shininess = 0.0f;
     float heightScale = 0.0f;
     bool clipParallaxEdges = false;
+    bool transparent = false;
 };
 
 // Diffuse and specular maps plus shininess. Always holds at least one map of
@@ -28,10 +29,11 @@ class Material {
     float heightScale() const;
     bool clipParallaxEdges() const;
     bool hasNormalMap() const;
+    bool isTransparent() const;
 
   private:
     std::vector<TexturePtr> _diffuseMaps, _specularMaps;
     TexturePtr _normalMap, _depthMap;
     float _shininess, _heightScale;
-    bool _clipParallaxEdges, _hasNormalMap = false;
+    bool _clipParallaxEdges, _hasNormalMap = false, _transparent = false;
 };
