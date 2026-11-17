@@ -1,4 +1,5 @@
 #include "scene/scene.h"
+#include "components/transform.h"
 #include "scene/entity.h"
 #include <memory>
 
@@ -67,8 +68,11 @@ void Scene::destroy(EntityHandle handle) {
     _pendingChanges.push_back(change);
 }
 
-void Scene::setParent(EntityHandle entity, EntityHandle parent) {
-    Reparent change{.entity = entity, .parent = parent};
+void Scene::setParent(EntityHandle entity, EntityHandle parent,
+                      bool keepWorldTransform) {
+    Reparent change{.entity = entity,
+                    .parent = parent,
+                    .keepWorldTransform = keepWorldTransform};
     _pendingChanges.push_back(change);
 }
 
@@ -118,7 +122,16 @@ void Scene::processChange(const Reparent& reparenting,
     Entity* entity = get(reparenting.entity);
     if (!entity)
         return;
+    Transform& entityTransform = entity->getTransform();
+    const glm::vec3 worldPos = entityTransform.getPos();
+    const glm::quat worldRot = entityTransform.getRot();
+    const glm::vec3 worldScale = entityTransform.getScale();
     applyParent(*entity, reparenting.parent);
+    if (reparenting.keepWorldTransform) {
+        entityTransform.setPosition(worldPos, Space::World);
+        entityTransform.setRotation(worldRot, Space::World);
+        entityTransform.setScale(worldScale, Space::World);
+    }
 }
 
 void Scene::processChange(const Destroy& destruction,

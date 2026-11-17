@@ -5,8 +5,9 @@ out vec4 fragColor;
 
 uniform sampler2DMS screenTexture;
 uniform int sampleCount;
-uniform bool applyFilter, applyMSAA;
+uniform bool applyFilter, applyMSAA, crosshair;
 uniform float gamma;
+uniform vec2 resolution;  // the window's size in pixels
 
 const int KERNEL_SIZE = 3;
 
@@ -50,4 +51,11 @@ void main() {
         fragColor = texelFetch(screenTexture, center, 0);
     }
     fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+    if (crosshair) {
+        vec2 fromCenter = abs(gl_FragCoord.xy - resolution * 0.5);
+        bool onCross = (fromCenter.x < 1.0 && fromCenter.y < 8.0) ||
+                       (fromCenter.y < 1.0 && fromCenter.x < 8.0);
+        if (onCross)
+            fragColor.rgb = 1.0 - fragColor.rgb;
+    }
 }

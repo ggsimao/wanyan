@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
         SceneRenderer renderer(shaders.forRenderer(), matrices);
         Screen screen(platform.width(), platform.height(), CLEAR_COLOR,
                       shaders.screen);
+        screen.parameters().crosshair = true;
         Screen mirror(platform.width(), platform.height(), CLEAR_COLOR,
                       shaders.screen);
 

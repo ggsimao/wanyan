@@ -13,7 +13,6 @@ struct Batch {
 struct SingleDraw {  // drawn on its own, with the UBO's model matrix
     const Entity* entity;
     const BasicMesh* mesh;
-    float distance;  // to the camera, for sorting transparent parts
 };
 
 struct GatheredLight {

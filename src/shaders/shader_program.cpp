@@ -131,6 +131,12 @@ void ShaderProgramBinding::setFloat(std::string_view name,
     glUniform1f(_program.uniformLocation(name), value);
 }
 
+void ShaderProgramBinding::setVec2(std::string_view name,
+                                   const glm::vec2& value) const {
+    assertActive();
+    glUniform2f(_program.uniformLocation(name), value.x, value.y);
+}
+
 void ShaderProgramBinding::setVec3(std::string_view name,
                                    const glm::vec3& value) const {
     assertActive();

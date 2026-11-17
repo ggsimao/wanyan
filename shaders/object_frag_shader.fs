@@ -223,6 +223,10 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 fragPos,
                                vec3 viewDir, vec3 diff_tex_sum,
                                vec3 spec_tex_sum) {
     vec3 lightDir = normalize(-light.direction);
+    if (dot(normalize(fs_in.normal), lightDir) <= 0.0) {
+        return vec3(0.0);
+    }
+
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -242,6 +246,10 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 fragPos,
 vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
                          vec3 viewDir, vec3 diff_tex_sum, vec3 spec_tex_sum) {
     vec3 lightDir = normalize(light.position - fragPos);
+    if (dot(normalize(fs_in.normal), lightDir) <= 0.0) {
+        return vec3(0.0);
+    }
+
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -265,6 +273,10 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
 vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
                         vec3 viewDir, vec3 diff_tex_sum, vec3 spec_tex_sum) {
     vec3 lightDir = normalize(light.position - fragPos);
+    if (dot(normalize(fs_in.normal), lightDir) <= 0.0) {
+        return vec3(0.0);
+    }
+
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);

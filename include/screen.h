@@ -2,7 +2,7 @@
 
 #include "data/frame_buffer.h"
 #include "drawables/canvas.h"
-#include "scene/entity.h"
+#include "scene/entity_handle.h"
 
 #include <GL/glew.h>
 #include <glm/mat4x4.hpp>
@@ -22,6 +22,7 @@ struct ScreenParameters {
     bool msaaOn = false;
     bool mirror = false;
     float gamma = DEFAULT_GAMMA;
+    bool crosshair = false;
 };
 
 // An offscreen view of the scene: renders into its own multisampled
@@ -56,8 +57,7 @@ class Screen {
     const ScreenParameters& parameters() const;
 
   private:
-    void present(const glm::mat4& model, float gamma,
-                 const ScreenParameters& effects) const;
+    void present(const glm::mat4& model, const ScreenParameters& effects) const;
 
     FrameBuffer _framebuffer;
     Canvas _canvas;

@@ -24,7 +24,8 @@ class Scene {
 
     EntityHandle create(EntityDescription desc);
     void destroy(EntityHandle handle);
-    void setParent(EntityHandle entity, EntityHandle parent);
+    void setParent(EntityHandle entity, EntityHandle parent,
+                   bool keepWorldTransform = false);
 
     Entity* get(EntityHandle handle);
     const Entity* get(EntityHandle handle) const;
@@ -33,6 +34,38 @@ class Scene {
     const Entity* getActiveCamera() const;
 
     void setActiveCamera(EntityHandle handle);
+
+    // Calls process(entity) for every active entity,
+    // depth-first. Inactive entities are skipped with their whole subtree.
+    template <typename F> void forEachActive(F& process) {
+        for (Entity* root : _roots) {
+            forEachInSubtree(*root, process);
+        }
+    }
+    template <typename F> void forEachInSubtree(Entity& entity, F& process) {
+        if (!entity.activeSelf()) {
+            return;
+        }
+        process(entity);
+        for (Entity* child : entity.getChildren()) {
+            forEachInSubtree(*child, process);
+        }
+    }
+    template <typename F> void forEachActive(F& process) const {
+        for (const Entity* root : _roots) {
+            forEachInSubtree(*root, process);
+        }
+    }
+    template <typename F>
+    void forEachInSubtree(const Entity& entity, F& process) const {
+        if (!entity.activeSelf()) {
+            return;
+        }
+        process(entity);
+        for (const Entity* child : entity.getChildren()) {
+            forEachInSubtree(*child, process);
+        }
+    }
 
   private:
     struct EntitySlot {
@@ -46,6 +79,7 @@ class Scene {
     struct Reparent {
         EntityHandle entity;
         EntityHandle parent;
+        bool keepWorldTransform = false;
     };
     struct Destroy {
         EntityHandle entity;

@@ -2,7 +2,6 @@
 
 #include "data/point_shadow_frame_buffer.h"
 #include "data/shadow_frame_buffer.h"
-#include "scene/entity.h"
 #include "scene/frame_data.h"
 #include "scene/scene.h"
 #include "shaders/point_shadow_shader.h"
@@ -64,19 +63,6 @@ class SceneRenderer {
     void updateFrameData(const Scene& scene);
 
   private:
-    // Calls process(entity) for every active entity,
-    // depth-first. Inactive entities are skipped with their whole subtree.
-    template <typename F>
-    void forEachActive(const Entity& entity, F& process) const {
-        if (!entity.activeSelf()) {
-            return;
-        }
-        process(entity);
-        for (const Entity* child : entity.getChildren()) {
-            forEachActive(*child, process);
-        }
-    }
-
     void setLightingUniforms(const ShaderProgramBinding& shader,
                              ShadowMapBindings shadows) const;
 

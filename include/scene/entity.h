@@ -5,12 +5,12 @@
 #include "components/lighting.h"
 #include "components/mesh_renderer.h"
 #include "components/transform.h"
+#include "scene/entity_handle.h"
 
 #include <cstddef>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
 
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
@@ -25,18 +25,6 @@ constexpr bool isAlternative<T, std::variant<Ts...>> = (std::is_same_v<T, Ts> ||
 template <typename T>
 concept BehaviourType =
     std::derived_from<T, BehaviourBase> && isAlternative<T, Behaviour>;
-
-struct EntityHandle {
-    static constexpr std::uint32_t NO_INDEX =
-        std::numeric_limits<std::uint32_t>::max();
-
-    std::uint32_t index = NO_INDEX;
-    std::uint32_t generation = 0;
-
-    bool isNull() const { return index == NO_INDEX; }
-    bool operator==(const EntityHandle&) const = default;
-    auto operator<=>(const EntityHandle&) const = default;
-};
 
 struct EntityDescription {
     std::string name = "";
@@ -65,6 +53,7 @@ class Entity {
     MeshRenderer* getMeshRenderer();
     Camera* getCamera();
     Light* getLight();
+    std::vector<Behaviour>* getBehaviours();
 
     const Entity* getParent() const;
     EntityHandle getHandle() const;
@@ -75,6 +64,7 @@ class Entity {
     const Camera* getCamera() const;
     const Light* getLight() const;
     const std::string getName() const;
+    const std::vector<Behaviour>* getBehaviours() const;
 
     std::size_t getChildrenCount() const;
 

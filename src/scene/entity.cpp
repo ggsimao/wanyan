@@ -32,6 +32,8 @@ Camera* Entity::getCamera() { return _camera ? &*_camera : nullptr; }
 
 Light* Entity::getLight() { return _light ? &*_light : nullptr; }
 
+std::vector<Behaviour>* Entity::getBehaviours() { return &_behaviours; }
+
 const Entity* Entity::getParent() const { return _parent; }
 
 EntityHandle Entity::getHandle() const { return _handle; }
@@ -56,6 +58,10 @@ const Camera* Entity::getCamera() const {
 const Light* Entity::getLight() const { return _light ? &*_light : nullptr; }
 
 const std::string Entity::getName() const { return _name; }
+
+const std::vector<Behaviour>* Entity::getBehaviours() const {
+    return &_behaviours;
+}
 
 std::size_t Entity::getChildrenCount() const { return _children.size(); }
 

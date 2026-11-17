@@ -32,16 +32,19 @@ void Screen::drawOnAnother(const Screen& other, float scaling,
     // Gamma 1: the other screen applies gamma once, when it's presented.
     // The effects are the other screen's, which is what Rust showed: it left
     // them at whatever the last drawOnScreen had set on the shared shader.
-    present(model, 1.0f, other._parameters);
+    ScreenParameters parameters = other._parameters;
+    parameters.gamma = 1.0f;
+    parameters.crosshair = false;
+    present(model, parameters);
 }
 
 void Screen::drawOnScreen() const {
     auto target = DrawFrameBufferBinding::screen();
     target.clear(glm::vec4(1.0f), GL_COLOR_BUFFER_BIT);
-    present(glm::mat4(1.0f), _parameters.gamma, _parameters);
+    present(glm::mat4(1.0f), _parameters);
 }
 
-void Screen::present(const glm::mat4& model, float gamma,
+void Screen::present(const glm::mat4& model,
                      const ScreenParameters& effects) const {
     // The canvas is drawn on top of whatever is there.
     render_state::Capability noDepth(GL_DEPTH_TEST, false);
@@ -49,9 +52,11 @@ void Screen::present(const glm::mat4& model, float gamma,
     TextureUnits units;
     ShaderProgramBinding shader(_shader);
     shader.setMat4("model", model);
-    shader.setFloat("gamma", gamma);
+    shader.setFloat("gamma", effects.gamma);
     shader.setBool("applyFilter", effects.filterOn);
     shader.setBool("applyMSAA", effects.msaaOn);
+    shader.setBool("crosshair", effects.crosshair);
+    shader.setVec2("resolution", {_framebuffer.width(), _framebuffer.height()});
 
     _canvas.draw(shader, units);
 }

@@ -6,6 +6,7 @@
 #include "data/uniform_buffer.h"
 #include "render_state/blending.h"
 #include "render_state/capability.h"
+#include "render_state/color.h"
 #include "render_state/culling.h"
 #include "render_state/depth.h"
 #include "render_state/stencil.h"
@@ -28,6 +29,8 @@
 namespace {
     constexpr float LAMP_NEAR_PLANE = 0.1f;
     constexpr float LAMP_FAR_PLANE = 100.0f;
+    constexpr float CAMERA_NEAR_PLANE = 0.1f;
+    constexpr float CAMERA_FAR_PLANE = 0.1f;
     constexpr float SUN_DISTANCE = 20.0f;
     constexpr float ASPECT_RATIO =
         1.0f;  // as in the Rust version, until window resizing
@@ -69,8 +72,8 @@ namespace {
         // half-angle.
         const Transform& transform = entity->getTransform();
         glm::vec3 pos = transform.getPos();
-        return {glm::perspective(2.0f * outerCutoff, 1.0f, LAMP_NEAR_PLANE,
-                                 LAMP_FAR_PLANE),
+        return {glm::perspective(2.0f * outerCutoff, 1.0f, CAMERA_NEAR_PLANE,
+                                 CAMERA_FAR_PLANE),
                 glm::lookAt(pos, pos + dir, WORLD_UP)};
     }
 
@@ -186,8 +189,9 @@ void SceneRenderer::compose(const Scene& scene, EntityHandle activeCamera) {
     render_state::CullFace backFaces(GL_BACK);
     render_state::Capability stencilTest(GL_STENCIL_TEST, true);
     render_state::StencilFunc stencilAlways(GL_ALWAYS, 1, 0xFF);
-    render_state::StencilOp stencilReplace(
-        GL_KEEP, GL_KEEP, GL_REPLACE);  // objects mark the stencil
+    render_state::StencilOp stencilKeep(
+        GL_KEEP, GL_KEEP,
+        GL_KEEP);  // only outlined objects mark it, in drawObjects
     render_state::StencilMask stencilWrites(0xFF);
     render_state::DepthMask depthMaskOn(true);
     // Blending off as baseline, most objects are opaque.
@@ -196,16 +200,22 @@ void SceneRenderer::compose(const Scene& scene, EntityHandle activeCamera) {
     TextureUnits units;
 
     const Entity* camera = scene.get(activeCamera);
+    const Camera* lens = camera ? camera->getCamera() : nullptr;
+    if (!lens)
+        return;
     const Transform& cameraTransform = camera->getTransform();
-    glm::mat4 proj = glm::perspective(camera->getCamera()->fovY, ASPECT_RATIO,
-                                      LAMP_NEAR_PLANE, LAMP_FAR_PLANE);
+    glm::mat4 proj = glm::perspective(lens->fovY, ASPECT_RATIO, lens->nearPlane,
+                                      lens->farPlane);
 
     glm::mat4 cam_lookat =
         glm::mat4_cast(glm::conjugate(cameraTransform.getRot())) *
         glm::translate(glm::mat4(1.0f), -cameraTransform.getPos());
 
-    std::ranges::sort(_frameData.transparent, std::greater{},
-                      &SingleDraw::distance);
+    std::ranges::sort(
+        _frameData.transparent, std::greater{}, [&](const SingleDraw& d) {
+            return glm::distance(d.entity->getTransform().getPos(),
+                                 cameraTransform.getPos());
+        });
 
     // The skybox follows the camera's rotation but not its position.
     glm::mat4 skybox_view = glm::mat4(glm::mat3(cam_lookat));
@@ -213,9 +223,9 @@ void SceneRenderer::compose(const Scene& scene, EntityHandle activeCamera) {
     drawSkyboxes(scene, units);
 
     _ubo.setProjViewMat(proj * cam_lookat);
-    drawObjects({.cameraTransform = camera->getTransform(),
-                 .ambientColor = scene.ambient},
-                units);
+    drawObjects(
+        {.cameraTransform = cameraTransform, .ambientColor = scene.ambient},
+        units);
 }
 
 void SceneRenderer::updateFrameData(const Scene& scene) {
@@ -273,20 +283,14 @@ void SceneRenderer::updateFrameData(const Scene& scene) {
             return;
         }
         const glm::mat4& world = entity.getTransform().getModel(Space::World);
-        const auto activeCamera = scene.getActiveCamera();
-        const float distance =
-            glm::distance(entity.getTransform().getPos(),
-                          activeCamera ? activeCamera->getTransform().getPos()
-                                       : glm::vec3(0.0));
         for (const auto& part : renderer->parts) {
             if (part->material().isTransparent()) {
-                _frameData.transparent.emplace_back(&entity, part.get(),
-                                                    distance);
+                _frameData.transparent.emplace_back(&entity, part.get());
             } else {
                 _frameData.opaque[part.get()].instances.emplace_back(world);
             }
             if (renderer->outline) {
-                _frameData.outlined.emplace_back(&entity, part.get(), distance);
+                _frameData.outlined.emplace_back(&entity, part.get());
             }
             if (renderer->castsShadows) {
                 _frameData.shadowCasters[part.get()].instances.emplace_back(
@@ -294,11 +298,7 @@ void SceneRenderer::updateFrameData(const Scene& scene) {
             }
         }
     };
-    for (const Entity* root : scene.getRoots()) {
-        if (root) {
-            forEachActive(*root, gatherObjects);
-        }
-    }
+    scene.forEachActive(gatherObjects);
     for (const auto& [_, batch] : _frameData.opaque) {
         InstanceBufferBinding(batch.buffer).upload(batch.instances);
     }
@@ -492,20 +492,49 @@ void SceneRenderer::drawObjects(const SceneParameters& parameters,
     }
     {
         ShaderProgramBinding outline(_shaders.outline);
-        render_state::StencilFunc outsideObject(GL_NOTEQUAL, 1, 0xFF);
-        render_state::StencilMask freezeStencil(0x00);
-        render_state::DepthFunc depthLequal(
-            GL_LEQUAL);  // pass where nothing nearer was drawn
-        render_state::DepthMask noDepthWrites(
-            false);  // outlines don't occlude anything later
+        const auto modelOf = [](const SingleDraw& draw) {
+            return draw.entity->getTransform().getModel();
+        };
         for (const auto& draw : _frameData.outlined) {
-            outline.setVec3(
-                "outlineColor",
-                draw.entity->getMeshRenderer()->outline.value().color);
-            _ubo.setModelMat(glm::scale(draw.entity->getTransform().getModel(),
-                                        glm::vec3(OUTLINE_SCALE)));
+            const bool marks = !draw.mesh->material().isTransparent();
+            const glm::mat4 model = modelOf(draw);
             bindIdentityInstance(*draw.mesh);
-            draw.mesh->draw(outline, units);
+
+            if (marks) {
+                // Mark: this object's silhouette becomes 1.
+                render_state::Capability noDepthTest(GL_DEPTH_TEST, false);
+                render_state::ColorMask noColor(false);
+                render_state::DepthMask noDepthWrites(false);
+                render_state::StencilFunc always(GL_ALWAYS, 1, 0xFF);
+                render_state::StencilOp mark(GL_KEEP, GL_KEEP, GL_REPLACE);
+                render_state::StencilMask writeStencil(0xFF);
+                _ubo.setModelMat(model);
+                draw.mesh->drawPlain(outline);
+            }
+            {
+                // Ring: outside this object's mark only.
+                render_state::StencilFunc outsideObject(GL_NOTEQUAL, 1, 0xFF);
+                render_state::StencilMask freezeStencil(0x00);
+                render_state::DepthFunc depthLequal(GL_LEQUAL);
+                render_state::DepthMask noDepthWrites(false);
+                outline.setVec3(
+                    "outlineColor",
+                    draw.entity->getMeshRenderer()->outline.value().color);
+                _ubo.setModelMat(glm::scale(model, glm::vec3(OUTLINE_SCALE)));
+                draw.mesh->drawPlain(outline);
+            }
+            if (marks) {
+                // Unmark: back to 0, so the next object's ring isn't blocked by
+                // this one.
+                render_state::Capability noDepthTest(GL_DEPTH_TEST, false);
+                render_state::ColorMask noColor(false);
+                render_state::DepthMask noDepthWrites(false);
+                render_state::StencilFunc always(GL_ALWAYS, 1, 0xFF);
+                render_state::StencilOp unmark(GL_KEEP, GL_KEEP, GL_ZERO);
+                render_state::StencilMask writeStencil(0xFF);
+                _ubo.setModelMat(model);
+                draw.mesh->drawPlain(outline);
+            }
         }
     }
     {

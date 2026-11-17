@@ -2,14 +2,19 @@
 
 #include "components/behaviours/flashlight.h"
 #include "components/behaviours/fly_camera.h"
+#include "components/behaviours/pickable.h"
+#include "components/behaviours/picker.h"
 #include "components/behaviours/rock_drift.h"
 #include "components/mesh_renderer.h"
+
 #include "drawables/basic_mesh.h"
 #include "drawables/model.h"
 #include "drawables/skybox.h"
+
 #include "random.h"
-#include "scene/entity.h"
+
 #include "shaders/shader_program.h"
+
 #include "textures/cube_map.h"
 #include "textures/helpers.h"
 #include "textures/material.h"
@@ -176,7 +181,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
                                           .innerCutoff = glm::radians(15.0f),
                                           .outerCutoff = glm::radians(20.0f)},
                         .castsShadows = true},
-         .behaviours = {FlyCamera{}, Flashlight{}}});
+         .behaviours = {FlyCamera{}, Flashlight{}, Picker{}}});
     auto mirror_camera = scene.create({
         .name = "Mirror camera",
         .parent = camera,
@@ -219,7 +224,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
          .meshRenderer =
              MeshRenderer{.parts = {boxMesh},
                           .outline = Outline{.color = {0.5f, 0.2f, 0.3f}}},
-         .behaviours = {Spin()}}));
+         .behaviours = {Spin{}, Pickable(0.5f)}}));
 
     /// Lamps
 
@@ -230,46 +235,54 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         std::make_shared<const BasicMesh>(cubeBuffers, lampMaterial);
     PointLight lampLight = PointLight{.attenuation = pointAttenuation};
 
-    entities.push_back(
-        scene.create({.name = "Lamp 1",
-                      .pos = glm::vec3(0.0f, 2.0f, 0.0f),
-                      .scale = glm::vec3(0.1f),
-                      .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-                      .light = Light{.color = white,
-                                     .intensity = 0.5f,
-                                     .on = true,
-                                     .kind = lampLight,
-                                     .castsShadows = true}}));
-    entities.push_back(
-        scene.create({.name = "Lamp 2",
-                      .pos = glm::vec3(-1.0f, -2.0f, -1.0f),
-                      .scale = glm::vec3(0.1f),
-                      .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-                      .light = Light{.color = white,
-                                     .intensity = 0.5f,
-                                     .on = true,
-                                     .kind = lampLight,
-                                     .castsShadows = true}}));
-    entities.push_back(
-        scene.create({.name = "Lamp 3",
-                      .pos = glm::vec3(1.0f, 0.0f, 1.0f),
-                      .scale = glm::vec3(0.1f),
-                      .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-                      .light = Light{.color = white,
-                                     .intensity = 0.5f,
-                                     .on = true,
-                                     .kind = lampLight,
-                                     .castsShadows = true}}));
-    entities.push_back(
-        scene.create({.name = "Lamp 4",
-                      .pos = glm::vec3(0.0f, 2.0f, -2.5f),
-                      .scale = glm::vec3(0.1f),
-                      .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-                      .light = Light{.color = white,
-                                     .intensity = 0.5f,
-                                     .on = true,
-                                     .kind = lampLight,
-                                     .castsShadows = true}}));
+    entities.push_back(scene.create({
+        .name = "Lamp 1",
+        .pos = glm::vec3(0.0f, 2.0f, 0.0f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+    entities.push_back(scene.create({
+        .name = "Lamp 2",
+        .pos = glm::vec3(-1.0f, -2.0f, -1.0f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+    entities.push_back(scene.create({
+        .name = "Lamp 3",
+        .pos = glm::vec3(1.0f, 0.0f, 1.0f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+    entities.push_back(scene.create({
+        .name = "Lamp 4",
+        .pos = glm::vec3(0.0f, 2.0f, -2.5f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
 
     /// Rocks
 
@@ -285,7 +298,8 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
                               randomIn({.min = -10.0, .max = 10.0})},
              .scale = glm::vec3(0.1f),
              .meshRenderer = MeshRenderer{.parts = rockModel.meshes()},
-             .behaviours = {RockDrift(0.1f, 0.01f, angularRate, linearRate)}}));
+             .behaviours = {RockDrift(0.1f, 0.01f, angularRate, linearRate),
+                            Pickable(0.1f)}}));
     }
 
     /// Window
@@ -293,22 +307,25 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
     entities.push_back(scene.create(
         {.name = "Window",
          .pos = {0.0f, 1.5f, -1.5f},
-         .meshRenderer = MeshRenderer{
-             .parts = {std::make_shared<const BasicMesh>(BasicMesh::square(
-                 1.0f,
-                 Material({.diff = {texture(TextureType::DIFFUSE,
-                                            WINDOW_TEXTURE, GL_CLAMP_TO_EDGE)},
-                           .spec = {texture(TextureType::SPECULAR,
-                                            WINDOW_SPECULAR, GL_CLAMP_TO_EDGE)},
-                           .shininess = 8.0f,
-                           .transparent = true})))}}}));
+         .meshRenderer =
+             MeshRenderer{.parts = {std::make_shared<const BasicMesh>(
+                              BasicMesh::square(
+                                  1.0f, Material({.diff = {texture(
+                                                      TextureType::DIFFUSE,
+                                                      WINDOW_TEXTURE,
+                                                      GL_CLAMP_TO_EDGE)},
+                                                  .spec = {texture(
+                                                      TextureType::SPECULAR, WINDOW_SPECULAR, GL_CLAMP_TO_EDGE)},
+                                                  .shininess = 8.0f,
+                                                  .transparent = true})))}},
+         .behaviours = {Pickable(0.5f)}}));
 
     /// Floor
 
     entities.push_back(scene.create(
         {.name = "Floor",
          .pos = {0.0f, -1.5f, 0.0f},
-         .rot = {0.7071068f, 0.7071068f, 0.0f, 0.0f},
+         .rot = {0.7071068f, -0.7071068f, 0.0f, 0.0f},
          .meshRenderer = MeshRenderer{
              .parts = {std::make_shared<const BasicMesh>(BasicMesh::square(
                  10.0f, Material({
