@@ -7,8 +7,15 @@
 
 class RockDrift : public BehaviourBase {
   public:
-    RockDrift(float angularStep, float linearStep, unsigned angularRate,
-              unsigned linearRate);
+    explicit RockDrift(float angularStep, float linearStep,
+                       unsigned angularRate, unsigned linearRate,
+                       bool active = true)
+        : BehaviourBase(active), _angularStep(angularStep),
+          _linearStep(linearStep), _axisCountdown(angularRate, angularRate),
+          _directionCountdown(linearRate, linearRate) {
+        randomizeAxis();
+        randomizeDirection();
+    }
 
     void start(const FrameContext& context);
     void update(const FrameContext& context);

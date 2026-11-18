@@ -1,5 +1,7 @@
 #pragma once
 
+#include "scene/entity_handle.h"
+
 #include <GL/glew.h>
 #include <glm/fwd.hpp>
 #include <glm/gtc/color_space.hpp>
@@ -37,6 +39,7 @@ struct Light {
     bool on = true;
     std::variant<DirectionalLight, PointLight, Spotlight> kind;
     bool castsShadows = true;
+    EntityHandle fixture = EntityHandle{};
 
     // What the shader should receive: black while the light is switched off.
     glm::vec3 effectiveRadiance() const {

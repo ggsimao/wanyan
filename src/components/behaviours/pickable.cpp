@@ -4,8 +4,6 @@
 #include "scene/entity_handle.h"
 #include "scene/scene.h"
 
-Pickable::Pickable(float radius) : radius(radius) {}
-
 void Pickable::pickUp(Scene& scene, EntityHandle holder) {
     if (_picked)
         return;

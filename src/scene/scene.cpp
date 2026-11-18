@@ -47,6 +47,9 @@ EntityHandle Scene::create(EntityDescription desc) {
         std::unique_ptr<Entity>(new Entity(*this, handle, std::move(desc)));
     _pendingChanges.reserve(_pendingChanges.size() +
                             1);  // so push_back can't throw below
+    if (auto light = entity->getLight()) {
+        light->fixture = handle;
+    }
     if (!reuse) {
         _slots.emplace_back();  // may throw; nothing claimed yet
     }

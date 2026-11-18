@@ -10,10 +10,14 @@
 
 // E to pick up nearest object in front of the camera
 struct Picker : BehaviourBase {
+    explicit Picker(bool active = true) : BehaviourBase(active) {}
     void update(const FrameContext& context);
+    void dropPicked(const FrameContext& context);
 
   private:
+    void restoreOutline(const FrameContext& context);
+
     EntityHandle _nearest, _picked;
     float _nearestDist = std::numeric_limits<float>::max();
-    std::optional<Outline> _nearestsOutline;
+    std::vector<std::pair<EntityHandle, std::optional<Outline>>> _savedOutlines;
 };

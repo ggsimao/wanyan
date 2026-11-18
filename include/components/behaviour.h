@@ -1,5 +1,6 @@
 #pragma once
 
+#include "components/behaviours/camera_switcher.h"
 #include "components/behaviours/flashlight.h"
 #include "components/behaviours/fly_camera.h"
 #include "components/behaviours/pickable.h"
@@ -11,7 +12,7 @@
 #include <variant>
 
 using Behaviour = std::variant<Spin, RockDrift, FlyCamera, Flashlight, Pickable,
-                               Picker>;  // one line to extend
+                               Picker, CameraSwitcher>;  // one line to extend
 
 inline BehaviourBase& base(Behaviour& behaviour) {
     return std::visit([](BehaviourBase& b) -> BehaviourBase& { return b; },

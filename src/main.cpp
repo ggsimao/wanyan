@@ -116,8 +116,8 @@ int main(int argc, char** argv) {
 
             {
                 auto timer = stats.time(debug::FrameStats::SHADOWS);
-                renderer.renderShadowMaps(
-                    scene);  // once: shadows don't depend on the camera
+                renderer.renderShadowMaps();  // once: shadows don't depend on
+                                              // the camera
             }
 
             {

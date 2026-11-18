@@ -5,15 +5,6 @@
 #include "random.h"
 #include "scene/entity.h"
 
-RockDrift::RockDrift(float angularStep, float linearStep, unsigned angularRate,
-                     unsigned linearRate)
-    : _angularStep(angularStep), _linearStep(linearStep),
-      _axisCountdown(angularRate, angularRate),
-      _directionCountdown(linearRate, linearRate) {
-    randomizeAxis();
-    randomizeDirection();
-}
-
 void RockDrift::start(const FrameContext& context) {
     random_engine::setSeed(context.seed);
 }

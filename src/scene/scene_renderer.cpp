@@ -11,6 +11,7 @@
 #include "render_state/depth.h"
 #include "render_state/stencil.h"
 #include "scene/entity.h"
+#include "scene/instance.h"
 #include "shaders/shader_program.h"
 #include "shaders/uniform_name.h"
 #include "textures/cube_map.h"
@@ -30,7 +31,7 @@ namespace {
     constexpr float LAMP_NEAR_PLANE = 0.1f;
     constexpr float LAMP_FAR_PLANE = 100.0f;
     constexpr float CAMERA_NEAR_PLANE = 0.1f;
-    constexpr float CAMERA_FAR_PLANE = 0.1f;
+    constexpr float CAMERA_FAR_PLANE = 100.0f;
     constexpr float SUN_DISTANCE = 20.0f;
     constexpr float ASPECT_RATIO =
         1.0f;  // as in the Rust version, until window resizing
@@ -104,9 +105,14 @@ namespace {
 }  // namespace
 
 SceneRenderer::SceneRenderer(SceneShaders shaders, UniformBuffer& ubo)
-    : _shaders(shaders), _ubo(ubo) {}
+    : _shaders(shaders), _ubo(ubo) {
+    // The dummies stand in for unused or shadowless slots, so they must read
+    // as "nothing in the way": depth 1.0 everywhere.
+    ShadowDrawBinding(_dummyShadow).clearDepth();
+    PointShadowDrawBinding(_dummyPointShadow).clearDepth();
+}
 
-void SceneRenderer::renderShadowMaps(const Scene& scene) const {
+void SceneRenderer::renderShadowMaps() const {
     render_state::Capability depthTest(GL_DEPTH_TEST, true);
     render_state::DepthFunc depthLess(GL_LESS);
     render_state::Capability culling(GL_CULL_FACE, true);
@@ -121,7 +127,7 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
         ShadowDrawBinding target(_dirShadowMaps.at(handle));
         target.clearDepth();
         _ubo.setProjViewMat(gathered.lightSpace);
-        drawShadowCasters(scene, shader, handle, 1);
+        drawShadowCasters(shader, gathered.light->fixture, 1);
     };
     const auto renderSpotlight = [&](const GatheredLight& gathered) {
         ShaderProgramBinding shader(_shaders.shadow);
@@ -129,7 +135,7 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
         ShadowDrawBinding target(_spotShadowMaps.at(handle));
         target.clearDepth();
         _ubo.setProjViewMat(gathered.lightSpace);
-        drawShadowCasters(scene, shader, handle, 1);
+        drawShadowCasters(shader, gathered.light->fixture, 1);
     };
     const auto renderPointLight = [&](const GatheredLight& gathered) {
         ShaderProgramBinding shader(_shaders.pointShadow.program());
@@ -143,7 +149,8 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
                            space.matrix(i));
         }
 
-        drawShadowCasters(scene, shader, handle, _shaders.pointShadow.layers());
+        drawShadowCasters(shader, gathered.light->fixture,
+                          _shaders.pointShadow.layers());
     };
 
     for (const auto* list : {&_frameData.dirLights, &_frameData.spotLights,
@@ -164,17 +171,21 @@ void SceneRenderer::renderShadowMaps(const Scene& scene) const {
     }
 }
 
-void SceneRenderer::drawShadowCasters(
-    const Scene& /*scene*/, const ShaderProgramBinding& shader,
-    const std::optional<EntityHandle>& /*fixture*/, GLsizei layers) const {
+void SceneRenderer::drawShadowCasters(const ShaderProgramBinding& shader,
+                                      const EntityHandle& fixture,
+                                      GLsizei layers) const {
     _ubo.setModelMat(
         glm::identity<glm::mat4>());  // world matrices are in the instances
     for (const auto& [mesh, batch] : _frameData.shadowCasters) {
         if (batch.instances.empty()) {
             continue;
         }
-        // shader.setInt("excludedInstance",
-        //               /* the fixture's index in this batch, or -1 */);
+        int excluded = -1;
+        if (const auto it = batch.shadowFixtureInstances.find(fixture);
+            it != batch.shadowFixtureInstances.end()) {
+            excluded = static_cast<int>(it->second);
+        }
+        shader.setInt("excludedInstance", excluded);
         mesh->bindInstanceBuffer(batch.buffer);
         mesh->drawPositionsInstanced(
             shader, static_cast<GLsizei>(batch.instances.size()), layers);
@@ -223,9 +234,7 @@ void SceneRenderer::compose(const Scene& scene, EntityHandle activeCamera) {
     drawSkyboxes(scene, units);
 
     _ubo.setProjViewMat(proj * cam_lookat);
-    drawObjects(
-        {.cameraTransform = cameraTransform, .ambientColor = scene.ambient},
-        units);
+    drawObjects({.camera = camera, .ambientColor = scene.ambient}, units);
 }
 
 void SceneRenderer::updateFrameData(const Scene& scene) {
@@ -240,6 +249,9 @@ void SceneRenderer::updateFrameData(const Scene& scene) {
     }
     for (auto& [mesh, batch] : _frameData.shadowCasters) {
         batch.instances.clear();
+        for (auto& [fixture, instance] : batch.shadowFixtureInstances) {
+            instance = -1;
+        }
     }
     _frameData.transparent.clear();
     _frameData.outlined.clear();
@@ -248,8 +260,8 @@ void SceneRenderer::updateFrameData(const Scene& scene) {
     _frameData.pointLights.clear();
     auto gatherObjects = [&](const Entity& entity) {
         const Light* light = entity.getLight();
+        EntityHandle handle = entity.getHandle();
         if (light && light->on) {
-            EntityHandle handle = entity.getHandle();
             const Transform& transform = entity.getTransform();
             glm::vec3 pos = transform.getPos();
             glm::vec3 dir = transform.getRot() * glm::vec3(0.0f, 0.0f, -1.0f);
@@ -287,14 +299,19 @@ void SceneRenderer::updateFrameData(const Scene& scene) {
             if (part->material().isTransparent()) {
                 _frameData.transparent.emplace_back(&entity, part.get());
             } else {
-                _frameData.opaque[part.get()].instances.emplace_back(world);
+                _frameData
+                    .opaque[{.mesh = part.get(), .layer = renderer->layer}]
+                    .instances.emplace_back(world);
             }
             if (renderer->outline) {
                 _frameData.outlined.emplace_back(&entity, part.get());
             }
             if (renderer->castsShadows) {
-                _frameData.shadowCasters[part.get()].instances.emplace_back(
-                    world);
+                std::vector<Instance>& thisInstances =
+                    _frameData.shadowCasters[part.get()].instances;
+                _frameData.shadowCasters[part.get()]
+                    .shadowFixtureInstances[handle] = thisInstances.size();
+                thisInstances.emplace_back(world);
             }
         }
     };
@@ -332,10 +349,14 @@ void SceneRenderer::setLightingUniforms(const ShaderProgramBinding& shader,
             return;
         UniformName spotlight("spotlights[{}]", spotCount);
         shader.setSpotlightData(spotlight.view(),
-                                {.light = gathered.light,
-                                 .pos = gathered.position,
-                                 .dir = gathered.direction,
-                                 .space = gathered.lightSpace});
+                                {
+                                    .light = gathered.light,
+                                    .pos = gathered.position,
+                                    .dir = gathered.direction,
+                                    .nearPlane = CAMERA_NEAR_PLANE,
+                                    .farPlane = CAMERA_FAR_PLANE,
+                                    .space = gathered.lightSpace,
+                                });
         UniformName spotLightShadowMap("spotlights[{}].shadow_map", spotCount);
         if (!gathered.light->castsShadows) {
             shader.setTexture(spotLightShadowMap.view(), shadows.dummyShadow,
@@ -379,10 +400,11 @@ void SceneRenderer::setLightingUniforms(const ShaderProgramBinding& shader,
                        gathered.light->kind);
         }
     }
-    // Unused slots still count: GL checks every active sampler at each draw,
-    // even ones the shader never reads, and a uniform keeps its last value
-    // across frames. So each unused slot points at a dummy of its own type;
-    // otherwise a slot left on another type's unit makes every draw fail.
+    // Unused slots still count: GL checks every active sampler at each
+    // draw, even ones the shader never reads, and a uniform keeps its last
+    // value across frames. So each unused slot points at a dummy of its own
+    // type; otherwise a slot left on another type's unit makes every draw
+    // fail.
     for (GLuint i = dirCount; i < MAX_DIR; ++i) {
         UniformName slot("dirLights[{}].shadow_map", i);
         shader.setTexture(slot.view(), shadows.dummyShadow, 0);
@@ -414,8 +436,8 @@ void SceneRenderer::bindIdentityInstance(const BasicMesh& part) const {
 
 void SceneRenderer::drawSkyboxes(const Scene& scene,
                                  TextureUnits& units) const {
-    // Seen from inside (no culling), drawn at maximum depth (LEQUAL), and kept
-    // out of the stencil buffer.
+    // Seen from inside (no culling), drawn at maximum depth (LEQUAL), and
+    // kept out of the stencil buffer.
     render_state::Capability noStencil(GL_STENCIL_TEST, false);
     render_state::Capability noCulling(GL_CULL_FACE, false);
     render_state::DepthFunc depthLequal(GL_LEQUAL);
@@ -428,12 +450,14 @@ void SceneRenderer::drawSkyboxes(const Scene& scene,
 
 void SceneRenderer::drawObjects(const SceneParameters& parameters,
                                 TextureUnits& units) const {
-    // Opaque objects first, then transparent ones, blended over the finished
-    // scene behind them. Both lists are drawn back to front: transparent ones
-    // so they blend in the right order, opaque ones so a nearer object can
-    // still cover an outline drawn before it. Sorts pointers, not the objects:
-    // their order is main's (it finds the rocks by index), and the mirror
-    // draws the same objects.
+    // Opaque objects first, then transparent ones, blended over the
+    // finished scene behind them. Both lists are drawn back to front:
+    // transparent ones so they blend in the right order, opaque ones so a
+    // nearer object can still cover an outline drawn before it.
+
+    const Camera* cam = parameters.camera->getCamera();
+    if (!cam)
+        return;
 
     ShaderProgramBinding shader(_shaders.object);
 
@@ -467,27 +491,31 @@ void SceneRenderer::drawObjects(const SceneParameters& parameters,
                                  pointShadowsBinding, dummyShadowBinding,
                                  dummyPointShadowBinding});
     shader.setVec3("ambientColor", parameters.ambientColor);
-    shader.setVec3("viewPos", parameters.cameraTransform.getPos());
+    shader.setVec3("viewPos", parameters.camera->getTransform().getPos());
 
     _ubo.setModelMat(glm::identity<glm::mat4>());
     _ubo.setNormalMat(glm::identity<glm::mat3>());
-    for (const auto& [mesh, batch] : _frameData.opaque) {
+    for (const auto& [key, batch] : _frameData.opaque) {
         if (batch.instances.empty()) {
             continue;
         }
+        if (!(key.layer & cam->mask))
+            continue;
         auto instanceCount = static_cast<GLsizei>(batch.instances.size());
-        mesh->bindInstanceBuffer(batch.buffer);
-        mesh->drawInstanced(shader, units, instanceCount);
+        key.mesh->bindInstanceBuffer(batch.buffer);
+        key.mesh->drawInstanced(shader, units, instanceCount);
     }
     if (_options.visualizeNormals) {
         ShaderProgramBinding debug(_shaders.debug);
-        for (const auto& [mesh, batch] : _frameData.opaque) {
+        for (const auto& [key, batch] : _frameData.opaque) {
             if (batch.instances.empty()) {
                 continue;
             }
+            if (!(key.layer & cam->mask))
+                continue;
             auto instanceCount = static_cast<GLsizei>(batch.instances.size());
-            mesh->bindInstanceBuffer(batch.buffer);
-            mesh->drawVerticesInstanced(debug, instanceCount);
+            key.mesh->bindInstanceBuffer(batch.buffer);
+            key.mesh->drawVerticesInstanced(debug, instanceCount);
         }
     }
     {
@@ -496,6 +524,8 @@ void SceneRenderer::drawObjects(const SceneParameters& parameters,
             return draw.entity->getTransform().getModel();
         };
         for (const auto& draw : _frameData.outlined) {
+            if (!(draw.entity->getMeshRenderer()->layer & cam->mask))
+                continue;
             const bool marks = !draw.mesh->material().isTransparent();
             const glm::mat4 model = modelOf(draw);
             bindIdentityInstance(*draw.mesh);
@@ -524,8 +554,8 @@ void SceneRenderer::drawObjects(const SceneParameters& parameters,
                 draw.mesh->drawPlain(outline);
             }
             if (marks) {
-                // Unmark: back to 0, so the next object's ring isn't blocked by
-                // this one.
+                // Unmark: back to 0, so the next object's ring isn't
+                // blocked by this one.
                 render_state::Capability noDepthTest(GL_DEPTH_TEST, false);
                 render_state::ColorMask noColor(false);
                 render_state::DepthMask noDepthWrites(false);
@@ -543,6 +573,8 @@ void SceneRenderer::drawObjects(const SceneParameters& parameters,
                                            GL_ONE_MINUS_SRC_ALPHA);
         render_state::DepthMask depthMaskOff(false);
         for (const auto& draw : _frameData.transparent) {
+            if (!(draw.entity->getMeshRenderer()->layer & cam->mask))
+                continue;
             _ubo.setModelMat(draw.entity->getTransform().getModel());
             _ubo.setNormalMat(
                 draw.entity->getTransform().getCofactorDetMatrix());

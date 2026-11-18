@@ -25,6 +25,7 @@ struct DirLightData {
 struct SpotlightData {
     const Light* light;
     glm::vec3 pos, dir;
+    float nearPlane, farPlane;
     glm::mat4 space;
 };
 

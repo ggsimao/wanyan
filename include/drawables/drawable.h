@@ -7,7 +7,7 @@
 class ShaderProgramBinding;
 class TextureUnits;
 
-// Anything a SceneObject can draw: meshes, models, skyboxes, canvases.
+// Anything that can be drawn: meshes, models, skyboxes, canvases.
 class Drawable {
   public:
     virtual ~Drawable() = default;

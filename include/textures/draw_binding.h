@@ -16,7 +16,7 @@
 //
 //     TextureUnits units;
 //     TextureDrawBinding shadow(units, sfbo.texture());        // unit 0
-//     shader.setTexture("dirLight.shadow_map", shadow);
+//     shader.setTexture("dirLight[0].shadow_map", shadow);
 //     for (const auto& mesh : meshes) {
 //         MaterialDrawBinding material(units, mesh.material()); // units 1..
 //         shader.setMaterial("material", material);

@@ -58,6 +58,10 @@ struct Spotlight {
 
     float phiCos;
     float gammaCos;
+    float gammaTan;
+
+    float nearPlane, farPlane;
+
     mat4 spaceMatrix;
 
     sampler2DShadow shadow_map;
@@ -174,8 +178,44 @@ float calculatePointShadowValue(samplerCubeShadow shadowMap, vec3 lightPos,
     return 1.0 - lit;
 }
 
-float calculateShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
-                           vec3 lightDir, vec3 normal) {
+float calculateSpotShadowValue(vec4 fragPosLightSpace,
+                               sampler2DShadow shadowMap, vec3 lightPos,
+                               vec3 lightDir, vec3 normal, float tanOuter,
+                               float nearPlane, float farPlane) {
+    vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+    vec3 fragPos = fs_in.pos;
+
+    float cosTheta = max(dot(normal, normalize(lightPos - fragPos)), 0.0);
+    float axisDistance = dot(fragPos - lightPos, normalize(lightDir));
+
+    if (axisDistance <= nearPlane || axisDistance > farPlane)
+        return 0.0;
+
+    float texelWorld =
+        2.0 * axisDistance * tanOuter / float(textureSize(shadowMap, 0).x);
+    float worldBias =
+        texelWorld * (MIN_BIAS_TEXELS + SLOPE_BIAS_TEXELS * (1.0 - cosTheta));
+    float reference =
+        cubeFaceDepth(axisDistance - worldBias, nearPlane, farPlane);
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    int kernel_half = (PCF_KERNEL_SIZE - 1) / 2;
+    for (int x = -kernel_half; x <= kernel_half; ++x) {
+        for (int y = -kernel_half; y <= kernel_half; ++y) {
+            vec2 offset = vec2(x, y) * texelSize;
+            // 1 where lit, 0 where shadowed, blended across 4 texels at edges.
+            float lit =
+                texture(shadowMap, vec3(projCoords.xy + offset, reference));
+            shadow += 1.0 - lit;
+        }
+    }
+    shadow /= float(PCF_KERNEL_SIZE * PCF_KERNEL_SIZE);
+
+    return shadow;
+}
+
+float calculateDirShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
+                              vec3 lightDir, vec3 normal) {
     vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
 
     float currentDepth = projCoords.z;
@@ -233,9 +273,9 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 fragPos,
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
     // float shadow = 0;
-    float shadow = calculateShadowValue(light.spaceMatrix * vec4(fragPos, 1.0),
-                                        light.shadow_map, lightDir,
-                                        normalize(fs_in.normal));
+    float shadow = calculateDirShadowValue(
+        light.spaceMatrix * vec4(fragPos, 1.0), light.shadow_map, lightDir,
+        normalize(fs_in.normal));
 
     vec3 directional_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -290,9 +330,10 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
         calculateAttenuation(light.position, fragPos, light.attenuation);
 
     // float shadow = 0;
-    float shadow = calculateShadowValue(light.spaceMatrix * vec4(fragPos, 1.0),
-                                        light.shadow_map, lightDir,
-                                        normalize(fs_in.normal));
+    float shadow = calculateSpotShadowValue(
+        light.spaceMatrix * vec4(fragPos, 1.0), light.shadow_map,
+        light.position, light.direction, normalize(fs_in.normal),
+        light.gammaTan, light.nearPlane, light.farPlane);
 
     vec3 spotlight_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);

@@ -8,5 +8,6 @@
 struct Spin : BehaviourBase {
     glm::vec3 axis;
     float speed;  // radians per second
+    explicit Spin(bool active = true) : BehaviourBase(active) {}
     void update(const FrameContext& context);
 };

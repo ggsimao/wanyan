@@ -1,5 +1,6 @@
 #include "scene/demo_scene.h"
 
+#include "components/behaviours/camera_switcher.h"
 #include "components/behaviours/flashlight.h"
 #include "components/behaviours/fly_camera.h"
 #include "components/behaviours/pickable.h"
@@ -13,6 +14,7 @@
 
 #include "random.h"
 
+#include "scene/layers.h"
 #include "shaders/shader_program.h"
 
 #include "textures/cube_map.h"
@@ -43,8 +45,6 @@ namespace {
     std::filesystem::path asset(const char* relative) {
         return std::filesystem::path(WANYAN_ROOT) / relative;
     }
-
-    // constexpr size_t LAMPS_INDEX = 3;
 
     // Shaders
     constexpr const char* REGULAR_VERT_SHADER =
@@ -78,12 +78,15 @@ namespace {
     constexpr const char* WINDOW_TEXTURE = "resources/textures/window_diff.png";
     constexpr const char* WINDOW_SPECULAR =
         "resources/textures/window_spec.png";
-    constexpr const char* WOOD_TEXTURE = "resources/textures/wood.jpg";
+    constexpr const char* WOOD_TEXTURE = "resources/textures/wood_7.png";
     constexpr const char* WOOD_NORMAL_MAP =
-        "resources/textures/wood_normal.png";
-    constexpr const char* WOOD_DEPTH_MAP = "resources/textures/wood_depth.png";
-
-    constexpr const char* ROCK_MODEL = "resources/models/rocks/rock.obj";
+        "resources/textures/wood_7_normal.png";
+    constexpr const char* WOOD_DEPTH_MAP =
+        "resources/textures/wood_7_depth.png";
+    constexpr const char* ROCK_MODEL =
+        "resources/models/rocks_4/GenericAsteroid.obj";
+    constexpr const char* WHEATLEY_MODEL =
+        "resources/models/wheatley/scene.gltf";
 
     // Not used yet; kept for later. Commented out because unused constants
     // are a warning, and -Werror makes that an error.
@@ -168,12 +171,14 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
 
     glm::vec3 cameraPos = {0.0f, 0.0f, -2.0f};
 
+    Model wheatley_model = Model(asset(WHEATLEY_MODEL));
+
     auto camera = scene.create(
         {.name = "Camera",
          .pos = cameraPos,
          .rot = glm::quatLookAt(glm::normalize(-cameraPos),
                                 glm::vec3(0.0f, 1.0f, 0.0f)),
-         .camera = Camera{},
+         .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_1},
          .light = Light{.color = white,
                         .intensity = 0.7f,
                         .on = false,
@@ -181,18 +186,66 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
                                           .innerCutoff = glm::radians(15.0f),
                                           .outerCutoff = glm::radians(20.0f)},
                         .castsShadows = true},
-         .behaviours = {FlyCamera{}, Flashlight{}, Picker{}}});
+         .behaviours = {FlyCamera{}, Flashlight{}, Picker{}, Pickable(0.15f)}});
     auto mirror_camera = scene.create({
         .name = "Mirror camera",
         .parent = camera,
         .rot = glm::quat(0.0f, 0.0f, 1.0f, 0.0f),
         .camera = Camera{},
     });
-
-    scene.setActiveCamera(camera);
+    auto player1 = scene.create({
+        .name = "Camera model",
+        .parent = camera,
+        .rot = glm::quat(0.7071068f, 0.0f, 0.7071068f, 0.0f),
+        .scale = glm::vec3(0.01),
+        .meshRenderer = MeshRenderer{.parts = {wheatley_model.meshes()},
+                                     .layer = layers::PLAYER_1},
+    });
 
     entities.push_back((camera));
     entities.push_back((mirror_camera));
+    entities.push_back(player1);
+    if (auto flashlight = scene.get(camera)->getLight()) {
+        flashlight->fixture = player1;
+    }
+
+    scene.setActiveCamera(camera);
+
+    glm::vec3 camera2Pos = {2.0f, 0.0f, 0.0f};
+
+    auto camera2 = scene.create(
+        {.name = "Camera 2",
+         .pos = camera2Pos,
+         .rot = glm::quatLookAt(glm::normalize(-camera2Pos),
+                                glm::vec3(0.0f, 1.0f, 0.0f)),
+         .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_2},
+         .light = Light{.color = white,
+                        .intensity = 0.7f,
+                        .on = false,
+                        .kind = Spotlight{.attenuation = flashlightAttenuation,
+                                          .innerCutoff = glm::radians(15.0f),
+                                          .outerCutoff = glm::radians(20.0f)},
+                        .castsShadows = true},
+         .behaviours = {FlyCamera{}, Flashlight{}, Picker{}, Pickable(0.15f)}});
+    auto player2 = scene.create({
+        .name = "Camera 2 model",
+        .parent = camera2,
+        .rot = glm::quat(0.7071068f, 0.0f, 0.7071068f, 0.0f),
+        .scale = glm::vec3(0.01),
+        .meshRenderer = MeshRenderer{.parts = {wheatley_model.meshes()},
+                                     .layer = layers::PLAYER_2},
+    });
+
+    entities.push_back((camera2));
+    entities.push_back(player2);
+    if (auto flashlight = scene.get(camera2)->getLight()) {
+        flashlight->fixture = player2;
+    }
+
+    scene.get(camera)->addBehaviour<CameraSwitcher>(
+        std::vector<EntityHandle>({camera, camera2}));
+    scene.get(camera2)->addBehaviour<CameraSwitcher>(
+        std::vector<EntityHandle>({camera, camera2}));
 
     /// Sun
 
@@ -299,7 +352,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
              .scale = glm::vec3(0.1f),
              .meshRenderer = MeshRenderer{.parts = rockModel.meshes()},
              .behaviours = {RockDrift(0.1f, 0.01f, angularRate, linearRate),
-                            Pickable(0.1f)}}));
+                            Pickable(0.075f)}}));
     }
 
     /// Window

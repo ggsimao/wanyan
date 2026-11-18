@@ -2,8 +2,6 @@
 
 ControllerHub::ControllerHub() {
     _handler.connect(_program);
-    // _handler.connect(_camera);
-    // _handler.connect(_flashlight);
     _handler.connect(_renderOptions);
     _handler.connect(_screen);
     _handler.connect(_input);

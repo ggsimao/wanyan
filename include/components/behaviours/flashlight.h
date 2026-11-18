@@ -5,5 +5,6 @@
 
 // F to turn flashlight on/off
 struct Flashlight : BehaviourBase {
+    explicit Flashlight(bool active = true) : BehaviourBase(active) {}
     void update(const FrameContext& context);
 };

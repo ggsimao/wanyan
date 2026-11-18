@@ -2,6 +2,7 @@
 
 #include "controls/input_state.h"
 #include "scene/entity.h"
+#include "scene/scene.h"
 
 #include <SDL_scancode.h>
 #include <glm/gtc/constants.hpp>
@@ -24,9 +25,18 @@ namespace {
 }  // namespace
 
 void FlyCamera::update(const FrameContext& context) {
+    if (!entity->isAncestorOf(context.scene.getActiveCamera()->getHandle()))
+        return;
     const InputState& input = context.input;
     Transform& transform = entity->getTransform();
     const glm::vec3 up(0.0f, 1.0f, 0.0f);
+
+    glm::vec3 forward = transform.getRot() * glm::vec3(0.0f, 0.0f, -1.0f);
+    // Keep it off the vertical, where "level" is undefined (the pitch clamp's
+    // range).
+    forward.y =
+        glm::clamp(forward.y, -std::sin(MAX_PITCH), std::sin(MAX_PITCH));
+    transform.setRotation(glm::quatLookAt(glm::normalize(forward), up));
 
     // Look. Yaw turns around world up and pitch tilts around the camera's
     // own right, which never introduces roll. The pitch delta is limited so
@@ -44,7 +54,8 @@ void FlyCamera::update(const FrameContext& context) {
     // onto the ground, so looking down doesn't make you sink, and right,
     // already horizontal since there's no roll.
     const glm::quat rot = transform.getRot();
-    glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, -1.0f);
+
+    forward = rot * glm::vec3(0.0f, 0.0f, -1.0f);
     forward.y = 0.0f;
     forward = glm::normalize(forward);
     const glm::vec3 right = rot * glm::vec3(1.0f, 0.0f, 0.0f);

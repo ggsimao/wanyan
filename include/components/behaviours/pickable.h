@@ -9,7 +9,8 @@
 // E to pick up nearest object in front of the camera
 struct Pickable : BehaviourBase {
     float radius;
-    Pickable(float radius = 0.5f);
+    explicit Pickable(float radius = 0.5f, bool active = true)
+        : BehaviourBase(active), radius(radius) {}
     void pickUp(Scene& scene, EntityHandle holder);
     void drop(Scene& scene);
 

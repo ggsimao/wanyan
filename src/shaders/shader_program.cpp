@@ -245,8 +245,15 @@ void ShaderProgramBinding::setSpotlightData(std::string_view name,
     // The shader compares cosines, which avoids an acos per fragment.
     UniformName phiCos("{}.phiCos", name);
     UniformName gammaCos("{}.gammaCos", name);
+    UniformName gammaTan("{}.gammaTan", name);
     setFloat(phiCos.view(), std::cos(spot.innerCutoff));
     setFloat(gammaCos.view(), std::cos(spot.outerCutoff));
+    setFloat(gammaTan.view(), std::tan(spot.outerCutoff));
+
+    UniformName nearPlane("{}.nearPlane", name);
+    setFloat(nearPlane.view(), light.nearPlane);
+    UniformName farPlane("{}.farPlane", name);
+    setFloat(farPlane.view(), light.farPlane);
 
     UniformName space("{}.spaceMatrix", name);
     setMat4(space.view(), light.space);
