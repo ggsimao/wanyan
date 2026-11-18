@@ -202,8 +202,8 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
                                      .layer = layers::PLAYER_1},
     });
 
-    entities.push_back((camera));
-    entities.push_back((mirror_camera));
+    entities.push_back(camera);
+    entities.push_back(mirror_camera);
     entities.push_back(player1);
     if (auto flashlight = scene.get(camera)->getLight()) {
         flashlight->fixture = player1;
@@ -288,16 +288,18 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         std::make_shared<const BasicMesh>(cubeBuffers, lampMaterial);
     PointLight lampLight = PointLight{.attenuation = pointAttenuation};
 
+    auto lampLightColor = Light{.color = white,
+                                .intensity = 1.0f,
+                                .on = true,
+                                .kind = lampLight,
+                                .castsShadows = true};
+
     entities.push_back(scene.create({
         .name = "Lamp 1",
         .pos = glm::vec3(0.0f, 2.0f, 0.0f),
         .scale = glm::vec3(0.1f),
         .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-        .light = Light{.color = white,
-                       .intensity = 0.5f,
-                       .on = true,
-                       .kind = lampLight,
-                       .castsShadows = true},
+        .light = lampLightColor,
         .behaviours = {Pickable(0.05f)},
     }));
     entities.push_back(scene.create({
@@ -305,11 +307,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         .pos = glm::vec3(-1.0f, -2.0f, -1.0f),
         .scale = glm::vec3(0.1f),
         .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-        .light = Light{.color = white,
-                       .intensity = 0.5f,
-                       .on = true,
-                       .kind = lampLight,
-                       .castsShadows = true},
+        .light = lampLightColor,
         .behaviours = {Pickable(0.05f)},
     }));
     entities.push_back(scene.create({
@@ -317,11 +315,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         .pos = glm::vec3(1.0f, 0.0f, 1.0f),
         .scale = glm::vec3(0.1f),
         .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-        .light = Light{.color = white,
-                       .intensity = 0.5f,
-                       .on = true,
-                       .kind = lampLight,
-                       .castsShadows = true},
+        .light = lampLightColor,
         .behaviours = {Pickable(0.05f)},
     }));
     entities.push_back(scene.create({
@@ -329,11 +323,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         .pos = glm::vec3(0.0f, 2.0f, -2.5f),
         .scale = glm::vec3(0.1f),
         .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-        .light = Light{.color = white,
-                       .intensity = 0.5f,
-                       .on = true,
-                       .kind = lampLight,
-                       .castsShadows = true},
+        .light = lampLightColor,
         .behaviours = {Pickable(0.05f)},
     }));
 

@@ -35,7 +35,9 @@ struct DirLight {
 
     mat4 spaceMatrix;
 
-    sampler2DShadow shadow_map;
+    float texelWorld, depthRange;
+
+    sampler2DShadow shadowMap;
 };
 
 struct PointLight {
@@ -46,7 +48,7 @@ struct PointLight {
 
     float nearPlane, farPlane;
 
-    samplerCubeShadow shadow_map;
+    samplerCubeShadow shadowMap;
 };
 
 struct Spotlight {
@@ -64,7 +66,7 @@ struct Spotlight {
 
     mat4 spaceMatrix;
 
-    sampler2DShadow shadow_map;
+    sampler2DShadow shadowMap;
 };
 
 layout(std140, binding = 0) uniform Matrices {
@@ -215,7 +217,8 @@ float calculateSpotShadowValue(vec4 fragPosLightSpace,
 }
 
 float calculateDirShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
-                              vec3 lightDir, vec3 normal) {
+                              vec3 lightDir, vec3 normal, float texelWorld,
+                              float depthRange) {
     vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
 
     float currentDepth = projCoords.z;
@@ -223,7 +226,14 @@ float calculateDirShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
     if (currentDepth > 1.0)
         return 0.0;
 
-    float shadowBias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    // A bias of a few shadow-map texels in world units, more at grazing
+    // angles. Orthographic depth is linear, so metres convert to depth units
+    // by dividing by the depth range.
+    float cosTheta = max(dot(normal, lightDir), 0.0);
+    float worldBias =
+        texelWorld * (MIN_BIAS_TEXELS + SLOPE_BIAS_TEXELS * (1.0 - cosTheta));
+    float reference = currentDepth - worldBias / depthRange;
+
     float shadow = 0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     int kernel_half = (PCF_KERNEL_SIZE - 1) / 2;
@@ -231,8 +241,8 @@ float calculateDirShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
         for (int y = -kernel_half; y <= kernel_half; ++y) {
             vec2 offset = vec2(x, y) * texelSize;
             // 1 where lit, 0 where shadowed, blended across 4 texels at edges.
-            float lit = texture(shadowMap, vec3(projCoords.xy + offset,
-                                                currentDepth - shadowBias));
+            float lit =
+                texture(shadowMap, vec3(projCoords.xy + offset, reference));
             shadow += 1.0 - lit;
         }
     }
@@ -274,8 +284,8 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 fragPos,
 
     // float shadow = 0;
     float shadow = calculateDirShadowValue(
-        light.spaceMatrix * vec4(fragPos, 1.0), light.shadow_map, lightDir,
-        normalize(fs_in.normal));
+        light.spaceMatrix * vec4(fragPos, 1.0), light.shadowMap, lightDir,
+        normalize(fs_in.normal), light.texelWorld, light.depthRange);
 
     vec3 directional_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -299,7 +309,7 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
         calculateAttenuation(light.position, fragPos, light.attenuation);
 
     // float shadow = 0;
-    float shadow = calculatePointShadowValue(light.shadow_map, light.position,
+    float shadow = calculatePointShadowValue(light.shadowMap, light.position,
                                              normalize(fs_in.normal),
                                              light.nearPlane, light.farPlane);
 
@@ -331,9 +341,9 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
 
     // float shadow = 0;
     float shadow = calculateSpotShadowValue(
-        light.spaceMatrix * vec4(fragPos, 1.0), light.shadow_map,
-        light.position, light.direction, normalize(fs_in.normal),
-        light.gammaTan, light.nearPlane, light.farPlane);
+        light.spaceMatrix * vec4(fragPos, 1.0), light.shadowMap, light.position,
+        light.direction, normalize(fs_in.normal), light.gammaTan,
+        light.nearPlane, light.farPlane);
 
     vec3 spotlight_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);

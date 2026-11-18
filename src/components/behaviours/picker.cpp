@@ -15,14 +15,16 @@ namespace {
 }  // namespace
 
 void Picker::update(const FrameContext& context) {
-    restoreOutline(context);
-    if (context.scene.get(_picked) && context.input.pressed(SDL_SCANCODE_E)) {
-        dropPicked(context);
+    if (context.scene.get(_picked)) {
+        if (context.input.pressed(SDL_SCANCODE_E)) {
+            dropPicked(context);
+        }
         return;
     }
     if (!entity->isAncestorOf(context.scene.getActiveCamera()->getHandle())) {
         return;
     }
+    restoreOutline(context);
     const Transform& cameraTransform = entity->getTransform();
     glm::vec3 cameraPos = cameraTransform.getPos();
     glm::vec3 cameraDir =
@@ -75,6 +77,7 @@ void Picker::dropPicked(const FrameContext& context) {
         picked->getBehaviour<Pickable>()->drop(context.scene);
         _picked = EntityHandle{};
     }
+    restoreOutline(context);
 }
 
 void Picker::restoreOutline(const FrameContext& context) {

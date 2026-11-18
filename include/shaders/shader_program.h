@@ -20,6 +20,7 @@ struct DirLightData {
     const Light* light;
     glm::vec3 dir;
     glm::mat4 space;
+    float texelWorld, depthRange;
 };
 
 struct SpotlightData {
@@ -103,7 +104,7 @@ class ShaderProgramBinding : ScopedBinding<ShaderProgram> {
                      const MaterialDrawBinding& material) const;
 
     // Shadow maps aren't set here: bind them with a TextureDrawBinding and
-    // pass it to setTexture(name + ".shadow_map", ...).
+    // pass it to setTexture(name + ".shadowMap", ...).
     void setDirectionalLightData(std::string_view name,
                                  const DirLightData& light) const;
     void setPointLightData(std::string_view name,

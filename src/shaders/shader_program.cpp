@@ -210,6 +210,11 @@ void ShaderProgramBinding::setDirectionalLightData(
 
     UniformName space("{}.spaceMatrix", name);
     setMat4(space.view(), light.space);
+
+    UniformName texelWorld("{}.texelWorld", name);
+    setFloat(texelWorld.view(), light.texelWorld);
+    UniformName depthRange("{}.depthRange", name);
+    setFloat(depthRange.view(), light.depthRange);
 }
 
 void ShaderProgramBinding::setPointLightData(

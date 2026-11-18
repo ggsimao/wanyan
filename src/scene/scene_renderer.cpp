@@ -1,5 +1,6 @@
 #include "scene/scene_renderer.h"
 
+#include "components/lighting.h"
 #include "data/instance_buffer.h"
 #include "data/point_shadow_frame_buffer.h"
 #include "data/shadow_frame_buffer.h"
@@ -33,6 +34,7 @@ namespace {
     constexpr float CAMERA_NEAR_PLANE = 0.1f;
     constexpr float CAMERA_FAR_PLANE = 100.0f;
     constexpr float SUN_DISTANCE = 20.0f;
+    constexpr float SUN_SIDE_HALF = 10.0f;
     constexpr float ASPECT_RATIO =
         1.0f;  // as in the Rust version, until window resizing
     constexpr size_t FACES = 6;
@@ -61,9 +63,9 @@ namespace {
             -glm::normalize(entity->getTransform().getRot() *
                             glm::vec3(0.0f, 0.0f, -1.0f)) *
             SUN_DISTANCE;
-        return {
-            glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 2.0f * SUN_DISTANCE),
-            glm::lookAt(position, glm::vec3(0.0f), WORLD_UP)};
+        return {glm::ortho(-SUN_SIDE_HALF, SUN_SIDE_HALF, -SUN_SIDE_HALF,
+                           SUN_SIDE_HALF, 0.0f, 2.0f * SUN_DISTANCE),
+                glm::lookAt(position, glm::vec3(0.0f), WORLD_UP)};
     }
 
     LightSpace spotlightSpace(const Entity* entity, glm::vec3 dir,
@@ -331,11 +333,14 @@ void SceneRenderer::setLightingUniforms(const ShaderProgramBinding& shader,
         if (dirCount >= MAX_DIR)
             return;
         UniformName dirLight("dirLights[{}]", dirCount);
-        shader.setDirectionalLightData(dirLight.view(),
-                                       {.light = gathered.light,
-                                        .dir = gathered.direction,
-                                        .space = gathered.lightSpace});
-        UniformName dirLightShadowMap("dirLights[{}].shadow_map", dirCount);
+        shader.setDirectionalLightData(
+            dirLight.view(),
+            {.light = gathered.light,
+             .dir = gathered.direction,
+             .space = gathered.lightSpace,
+             .texelWorld = 2.0f * SUN_SIDE_HALF / SHADOW_RESOLUTION,
+             .depthRange = 2.0f * SUN_DISTANCE});
+        UniformName dirLightShadowMap("dirLights[{}].shadowMap", dirCount);
         if (!gathered.light->castsShadows) {
             shader.setTexture(dirLightShadowMap.view(), shadows.dummyShadow, 0);
         } else {
@@ -357,7 +362,7 @@ void SceneRenderer::setLightingUniforms(const ShaderProgramBinding& shader,
                                     .farPlane = CAMERA_FAR_PLANE,
                                     .space = gathered.lightSpace,
                                 });
-        UniformName spotLightShadowMap("spotlights[{}].shadow_map", spotCount);
+        UniformName spotLightShadowMap("spotlights[{}].shadowMap", spotCount);
         if (!gathered.light->castsShadows) {
             shader.setTexture(spotLightShadowMap.view(), shadows.dummyShadow,
                               0);
@@ -376,7 +381,7 @@ void SceneRenderer::setLightingUniforms(const ShaderProgramBinding& shader,
                                   .pos = gathered.position,
                                   .nearPlane = LAMP_NEAR_PLANE,
                                   .farPlane = LAMP_FAR_PLANE});
-        UniformName pointLightShadowMap("pointLights[{}].shadow_map",
+        UniformName pointLightShadowMap("pointLights[{}].shadowMap",
                                         pointCount);
         if (!gathered.light->castsShadows) {
             shader.setTexture(pointLightShadowMap.view(),
@@ -406,15 +411,15 @@ void SceneRenderer::setLightingUniforms(const ShaderProgramBinding& shader,
     // type; otherwise a slot left on another type's unit makes every draw
     // fail.
     for (GLuint i = dirCount; i < MAX_DIR; ++i) {
-        UniformName slot("dirLights[{}].shadow_map", i);
+        UniformName slot("dirLights[{}].shadowMap", i);
         shader.setTexture(slot.view(), shadows.dummyShadow, 0);
     }
     for (GLuint i = spotCount; i < MAX_SPOT; ++i) {
-        UniformName slot("spotlights[{}].shadow_map", i);
+        UniformName slot("spotlights[{}].shadowMap", i);
         shader.setTexture(slot.view(), shadows.dummyShadow, 0);
     }
     for (GLuint i = pointCount; i < MAX_POINT; ++i) {
-        UniformName slot("pointLights[{}].shadow_map", i);
+        UniformName slot("pointLights[{}].shadowMap", i);
         shader.setTexture(slot.view(), shadows.dummyPointShadow, 0);
     }
     shader.setInt("loadedDir", dirCount);
