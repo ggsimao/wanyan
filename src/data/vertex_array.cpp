@@ -1,4 +1,5 @@
 #include "data/vertex_array.h"
+#include "data/buffer.h"
 #include <stdexcept>
 #include <utility>
 
@@ -71,9 +72,28 @@ void VertexArrayBinding::drawElementsInstanced(GLsizei count, GLsizei instances,
                             instances);
 }
 
-void VertexArrayBinding::attribDivisor(GLuint index, GLuint divisor) {
+void VertexArrayBinding::attribFormat(GLuint location, GLint components,
+                                      GLenum type, std::size_t relativeOffset) {
     assertActive();
-    glVertexAttribDivisor(index, divisor);
+    glEnableVertexAttribArray(location);
+    glVertexAttribFormat(location, components, type, false, relativeOffset);
+}
+
+void VertexArrayBinding::attribBinding(GLuint location, GLuint binding) {
+    assertActive();
+    glVertexAttribBinding(location, binding);
+}
+
+void VertexArrayBinding::bindVertexBuffer(GLuint binding,
+                                          const ArrayBuffer& buffer,
+                                          std::size_t offset, GLsizei stride) {
+    assertActive();
+    glBindVertexBuffer(binding, buffer.id(), offset, stride);
+}
+
+void VertexArrayBinding::bindingDivisor(GLuint binding, GLuint divisor) {
+    assertActive();
+    glVertexBindingDivisor(binding, divisor);
 }
 
 VertexArrayBinding::ArrayBufferBinding
@@ -95,15 +115,6 @@ void VertexArrayBinding::ArrayBufferBinding::bufferData(const void* data,
                                                         GLenum usage) {
     assertActive();
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(size), data, usage);
-}
-
-void VertexArrayBinding::ArrayBufferBinding::attribPointer(
-    GLuint index, GLint components, GLenum type, GLsizei stride,
-    std::size_t offset, GLboolean normalized) {
-    assertActive();
-    glEnableVertexAttribArray(index);
-    glVertexAttribPointer(index, components, type, normalized, stride,
-                          reinterpret_cast<const void*>(offset));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

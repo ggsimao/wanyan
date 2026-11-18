@@ -2,16 +2,17 @@
 
 #include "data/frame_buffer.h"
 #include "drawables/canvas.h"
+#include "scene/entity_handle.h"
 
 #include <GL/glew.h>
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
-class Camera;
+struct Camera;
 class SceneRenderer;
 class ShaderProgram;
-struct Scene;
+class Scene;
 
 inline constexpr float DEFAULT_GAMMA = 2.2f;
 
@@ -21,6 +22,7 @@ struct ScreenParameters {
     bool msaaOn = false;
     bool mirror = false;
     float gamma = DEFAULT_GAMMA;
+    bool crosshair = false;
 };
 
 // An offscreen view of the scene: renders into its own multisampled
@@ -40,8 +42,8 @@ class Screen {
     Screen& operator=(Screen&&) = delete;
 
     // Renders the scene, as seen by the camera, into this screen's framebuffer.
-    void drawOnFramebuffer(const SceneRenderer& renderer, const Scene& scene,
-                           const Camera& camera) const;
+    void drawOnFramebuffer(SceneRenderer& renderer, const Scene& scene,
+                           EntityHandle cameraHandle) const;
 
     // Draws this screen's image into another screen's framebuffer, scaled and
     // offset in clip space (e.g. 0.3 and (0.5, 0.5) for a corner inset).
@@ -55,8 +57,7 @@ class Screen {
     const ScreenParameters& parameters() const;
 
   private:
-    void present(const glm::mat4& model, float gamma,
-                 const ScreenParameters& effects) const;
+    void present(const glm::mat4& model, const ScreenParameters& effects) const;
 
     FrameBuffer _framebuffer;
     Canvas _canvas;

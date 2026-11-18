@@ -28,11 +28,10 @@ class Model : public Drawable {
     void drawPositionsInstanced(const ShaderProgramBinding& shader,
                                 GLsizei instances,
                                 GLsizei layers) const override;
-    void
-    setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const override;
+    void bindInstanceBuffer(const ArrayBuffer& instanceBuffer) const override;
 
-    const std::vector<BasicMesh>& meshes() const;
+    const std::vector<std::shared_ptr<const BasicMesh>>& meshes() const;
 
   private:
-    std::vector<BasicMesh> _meshes;
+    std::vector<std::shared_ptr<const BasicMesh>> _meshes;
 };

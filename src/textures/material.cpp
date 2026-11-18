@@ -10,7 +10,7 @@ Material::Material(MaterialParameters params)
       _depthMap(std::move(params.depthMap)), _shininess(params.shininess),
       _heightScale(params.heightScale),
       _clipParallaxEdges(params.clipParallaxEdges),
-      _hasNormalMap(_normalMap != nullptr) {
+      _hasNormalMap(_normalMap != nullptr), _transparent(params.transparent) {
     if (_diffuseMaps.empty()) {
         _diffuseMaps.push_back(Texture2D::empty());
     }
@@ -44,3 +44,5 @@ float Material::heightScale() const { return _heightScale; }
 bool Material::clipParallaxEdges() const { return _clipParallaxEdges; }
 
 bool Material::hasNormalMap() const { return _hasNormalMap; }
+
+bool Material::isTransparent() const { return _transparent; }

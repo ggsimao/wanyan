@@ -30,7 +30,7 @@ class MeshBuffers {
     // Reads per-instance model and normal matrices (see Instance) from the
     // given buffer, at the locations right after the vertex attributes: the
     // model matrix at 4-7, the normal matrix at 8-10.
-    void setupInstanceAttributes(const ArrayBuffer& instanceBuffer) const;
+    void bindInstanceBuffer(const ArrayBuffer& instanceBuffer) const;
 
     GLsizei indexCount() const;
 

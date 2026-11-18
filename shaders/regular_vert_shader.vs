@@ -12,16 +12,11 @@ layout(std140, binding = 0) uniform Matrices {
     mat4 normalMat;
 };
 
-uniform mat4 dirLightSpaceMatrix;
-uniform mat4 spotlightSpaceMatrix;
-
 out VERTEX {
     vec3 pos;
     vec3 normal;
     vec2 texCoords;
     mat3 TBN;
-    vec4 dirLightSpaceFragPos;
-    vec4 spotlightSpaceFragPos;
 }
 vs_out;
 
@@ -40,9 +35,6 @@ void main() {
     vs_out.normal = N;
 
     vs_out.texCoords = aTexCoord;
-
-    vs_out.dirLightSpaceFragPos = dirLightSpaceMatrix * vec4(vs_out.pos, 1.0);
-    vs_out.spotlightSpaceFragPos = spotlightSpaceMatrix * vec4(vs_out.pos, 1.0);
 
     gl_Position = projViewMat * out_pos_4;
 }

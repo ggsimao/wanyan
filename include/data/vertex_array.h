@@ -39,10 +39,6 @@ class VertexArrayBinding : ScopedBinding<VertexArray> {
                        std::ranges::size(data) * sizeof(T), usage);
         }
 
-        void attribPointer(GLuint index, GLint components, GLenum type,
-                           GLsizei stride, std::size_t offset,
-                           GLboolean normalized = GL_FALSE);
-
       private:
         friend class VertexArrayBinding;
         explicit ArrayBufferBinding(const ArrayBuffer& abo)
@@ -76,7 +72,12 @@ class VertexArrayBinding : ScopedBinding<VertexArray> {
                                GLenum mode = GL_TRIANGLES,
                                GLsizei first = 0) const;
 
-    void attribDivisor(GLuint index, GLuint divisor);
+    void attribFormat(GLuint location, GLint components, GLenum type,
+                      std::size_t relativeOffset);
+    void attribBinding(GLuint location, GLuint binding);
+    void bindVertexBuffer(GLuint binding, const ArrayBuffer& buffer,
+                          std::size_t offset, GLsizei stride);
+    void bindingDivisor(GLuint binding, GLuint divisor);
 
     [[nodiscard]] ArrayBufferBinding bindABO(const ArrayBuffer& abo);
     [[nodiscard]] ElementArrayBufferBinding

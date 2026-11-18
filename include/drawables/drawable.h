@@ -7,7 +7,7 @@
 class ShaderProgramBinding;
 class TextureUnits;
 
-// Anything a SceneObject can draw: meshes, models, skyboxes, canvases.
+// Anything that can be drawn: meshes, models, skyboxes, canvases.
 class Drawable {
   public:
     virtual ~Drawable() = default;
@@ -40,7 +40,7 @@ class Drawable {
 
     // Default: nothing to set up for things that don't support instancing.
     virtual void
-    setupInstanceAttributes(const ArrayBuffer& /*instanceBuffer*/) const {}
+    bindInstanceBuffer(const ArrayBuffer& /*instanceBuffer*/) const {}
 
   protected:
     // Protected so a Drawable can't be copied or moved through a base

@@ -1,15 +1,12 @@
 #pragma once
 
 #include "app/platform.h"
-#include "random_transform.h"
 #include "scene/scene.h"
 #include "scene/scene_renderer.h"
 #include "shaders/shader_program.h"
 
 #include <cstddef>
 #include <vector>
-
-class Camera;
 
 // The world this program shows: which shaders it uses, which lights and
 // objects exist and where. Everything specific to the current demo lives in
@@ -36,7 +33,4 @@ struct DemoShaders {
 DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures);
 
 // Lights, objects and skybox. The flashlight starts at the camera.
-Scene buildDemoScene(const Camera& camera);
-
-// One per rock instance, in the same order.
-std::vector<RandomTransform> buildRockTransforms(std::uint32_t seed);
+std::vector<EntityHandle> buildDemoScene(Scene& scene);

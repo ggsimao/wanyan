@@ -1,17 +1,30 @@
 #include "scene/demo_scene.h"
 
-#include "camera.h"
+#include "components/behaviours/camera_switcher.h"
+#include "components/behaviours/flashlight.h"
+#include "components/behaviours/fly_camera.h"
+#include "components/behaviours/pickable.h"
+#include "components/behaviours/picker.h"
+#include "components/behaviours/rock_drift.h"
+#include "components/mesh_renderer.h"
+
 #include "drawables/basic_mesh.h"
 #include "drawables/model.h"
 #include "drawables/skybox.h"
-#include "lighting.h"
-#include "random_transform.h"
+
+#include "random.h"
+
+#include "scene/layers.h"
 #include "shaders/shader_program.h"
+
 #include "textures/cube_map.h"
 #include "textures/helpers.h"
 #include "textures/material.h"
 #include "textures/texture_2d.h"
 
+#include <cmath>
+#include <format>
+#include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/trigonometric.hpp>
@@ -20,6 +33,7 @@
 #include <memory>
 #include <random>
 #include <utility>
+#include <vector>
 
 // The project's root directory, so assets are found whatever directory the
 // program runs from. CMake defines it; without it, run from the project root.
@@ -31,8 +45,6 @@ namespace {
     std::filesystem::path asset(const char* relative) {
         return std::filesystem::path(WANYAN_ROOT) / relative;
     }
-
-    constexpr size_t LAMPS_INDEX = 3;
 
     // Shaders
     constexpr const char* REGULAR_VERT_SHADER =
@@ -66,20 +78,24 @@ namespace {
     constexpr const char* WINDOW_TEXTURE = "resources/textures/window_diff.png";
     constexpr const char* WINDOW_SPECULAR =
         "resources/textures/window_spec.png";
-    constexpr const char* WOOD_TEXTURE = "resources/textures/wood.jpg";
+    constexpr const char* WOOD_TEXTURE = "resources/textures/wood_7.png";
     constexpr const char* WOOD_NORMAL_MAP =
-        "resources/textures/wood_normal.png";
-    constexpr const char* WOOD_DEPTH_MAP = "resources/textures/wood_depth.png";
-    constexpr const char* ROCK_MODEL = "resources/models/rocks/rock.obj";
+        "resources/textures/wood_7_normal.png";
+    constexpr const char* WOOD_DEPTH_MAP =
+        "resources/textures/wood_7_depth.png";
+    constexpr const char* ROCK_MODEL =
+        "resources/models/rocks_4/GenericAsteroid.obj";
+    constexpr const char* WHEATLEY_MODEL =
+        "resources/models/wheatley/scene.gltf";
 
     // Not used yet; kept for later. Commented out because unused constants
     // are a warning, and -Werror makes that an error.
     // constexpr const char* WALL_TEXTURE = "resources/textures/wall.jpg";
     // constexpr const char* FACE_TEXTURE =
-    // "resources/textures/awesomeface.png"; constexpr const char* GRASS_TEXTURE
-    // = "resources/textures/grass.png"; constexpr const char* ABSTRACT_CUBE =
-    // "resources/models/cube/untitled.obj"; constexpr const char* BACKPACK =
-    // "resources/models/backpack/backpack.obj";
+    // "resources/textures/awesomeface.png"; constexpr const char*
+    // GRASS_TEXTURE = "resources/textures/grass.png"; constexpr const char*
+    // ABSTRACT_CUBE = "resources/models/cube/untitled.obj"; constexpr const
+    // char* BACKPACK = "resources/models/backpack/backpack.obj";
 
     const CubeMapPaths SKYBOX_FACES = {
         asset("resources/textures/skybox/right.jpg"),
@@ -92,118 +108,6 @@ namespace {
 
     TexturePtr texture(TextureType type, const char* path, GLenum wrapping) {
         return std::make_shared<const Texture2D>(type, asset(path), wrapping);
-    }
-
-    // ------------------------------------------------------------ lighting
-
-    Lighting buildLighting(const Camera& camera) {
-        const glm::vec3 white(1.0f);
-        const Attenuation pointAttenuation{
-            .constant = 1.0f, .linear = 0.5f, .quadratic = 0.25f};
-        const Attenuation flashlightAttenuation{
-            .constant = 1.0f, .linear = 0.09f, .quadratic = 0.032f};
-
-        glm::vec3 sun_dir = {1.0f, -2.0f, 1.5f};
-        DirectionalLight sun(glm::normalize(sun_dir),
-                             {.color = white, .intensity = 1.0f});
-
-        std::vector<PointLight> lamps;
-        size_t instanceIndex = 0;
-        for (const glm::vec3& position :
-             {glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(-1.0f, -2.0f, -1.0f),
-              glm::vec3(1.0f, 0.0f, 1.0f), glm::vec3(0.0f, 2.0f, -2.5f)}) {
-            lamps.emplace_back(
-                position,
-                Light{.color = white,
-                      .intensity = 0.5f,
-                      .fixtureIndices =
-                          FixtureIndices{.objectID = LAMPS_INDEX,
-                                         .instanceID = instanceIndex}},
-                pointAttenuation);
-            instanceIndex++;
-        }
-
-        Spotlight flashlight(
-            camera.pos(), camera.dir(), {.color = white, .intensity = 0.7f},
-            flashlightAttenuation, glm::radians(15.0f), glm::radians(20.0f));
-
-        glm::vec3 ambientColor(0.02, 0.02, 0.02);
-
-        return Lighting{std::move(sun), std::move(lamps), std::move(flashlight),
-                        std::move(ambientColor)};
-    }
-
-    // ------------------------------------------------------------- objects
-
-    SceneObject buildRocks() {
-        SceneObject rocks(Model(asset(ROCK_MODEL)));
-        rocks.scale(glm::vec3(0.1f));
-        rocks.addInstances(ROCK_INSTANCES - 1);
-        for (std::size_t i = 0; i < ROCK_INSTANCES; ++i) {
-            RandomTransform::position(rocks.instance(i), {-100.0f, 100.0f},
-                                      {-100.0f, 100.0f}, {-100.0f, 100.0f});
-        }
-        return rocks;
-    }
-
-    SceneObject buildBox() {
-        Material material(
-            {.diff = {texture(TextureType::DIFFUSE, CONTAINER_TEXTURE,
-                              GL_CLAMP_TO_EDGE)},
-             .spec = {texture(TextureType::SPECULAR, CONTAINER_SPECULAR,
-                              GL_CLAMP_TO_EDGE)},
-             .shininess = 8.0f});
-        SceneObject box(BasicMesh::cube(1.0f, std::move(material)));
-        box.setOutlineColor({0.5f, 0.2f, 0.3f});
-        box.enableOutline(true);
-        return box;
-    }
-
-    SceneObject buildWindow() {
-        Material material({.diff = {texture(TextureType::DIFFUSE,
-                                            WINDOW_TEXTURE, GL_CLAMP_TO_EDGE)},
-                           .spec = {texture(TextureType::SPECULAR,
-                                            WINDOW_SPECULAR, GL_CLAMP_TO_EDGE)},
-                           .shininess = 8.0f});
-        SceneObject window(BasicMesh::square(1.0f, std::move(material)));
-        window.setTransparent(true);
-        window.translate({0.0f, 1.5f, -1.5f});
-        return window;
-    }
-
-    // One small glowing cube per point light, at the light's position.
-    SceneObject buildLamps(const std::vector<PointLight>& lights) {
-        Material material({.diff = {texture(TextureType::DIFFUSE, LAMP_TEXTURE,
-                                            GL_CLAMP_TO_EDGE)},
-                           .shininess = 32.0f});
-        SceneObject lamps(BasicMesh::cube(1.0f, std::move(material)));
-        if (lights.size() > 1) {
-            lamps.addInstances(lights.size() - 1);
-        }
-        for (std::size_t i = 0; i < lights.size(); ++i) {
-            lamps.instance(i).translate(lights[i].position);
-            lamps.instance(i).scale(glm::vec3(0.1f));
-        }
-        return lamps;
-    }
-
-    SceneObject buildFloor() {
-        TexturePtr diffuse =
-            texture(TextureType::DIFFUSE, WOOD_TEXTURE, GL_REPEAT);
-        TexturePtr normal =
-            texture(TextureType::NORMAL, WOOD_NORMAL_MAP, GL_REPEAT);
-        TexturePtr depth =
-            texture(TextureType::DEPTH, WOOD_DEPTH_MAP, GL_REPEAT);
-        Material material({.diff = {diffuse},
-                           .normalMap = normal,
-                           .depthMap = depth,
-                           .shininess = 16.0f,
-                           .heightScale = 0.02f,
-                           .clipParallaxEdges = true});
-        SceneObject floor(BasicMesh::square(10.0f, std::move(material)));
-        floor.rotate(-glm::half_pi<float>(), {1.0f, 0.0f, 0.0f});
-        floor.translate({0.0f, -1.5f, 0.0f});
-        return floor;
     }
 
     Skybox buildSkybox() {
@@ -250,32 +154,246 @@ DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
     };
 }
 
-Scene buildDemoScene(const Camera& camera) {
-    Lighting lighting = buildLighting(camera);
+std::vector<EntityHandle> buildDemoScene(Scene& scene) {
+    scene.ambient = {0.02, 0.02, 0.02};
 
-    std::vector<SceneObject> objects;
-    objects.push_back(
-        buildRocks());  // index 0: main applies the rock transforms to it
-    objects.push_back(buildBox());
-    objects.push_back(buildWindow());
-    objects.push_back(buildLamps(lighting.points));
-    objects.push_back(buildFloor());
+    std::vector<EntityHandle> entities;
 
-    Scene scene{std::move(objects), {}, std::move(lighting)};
-    scene.skyboxes.push_back(buildSkybox());
-    return scene;
-}
+    /// Light
 
-std::vector<RandomTransform> buildRockTransforms(std::uint32_t seed) {
-    std::mt19937 engine{seed};
-    // How often each rock picks a new spin axis and drift direction, in
-    // frames; 0 means never, as in Rust.
-    std::uniform_int_distribution<unsigned> rate(0, 1000);
+    const glm::vec3 white(1.0f);
+    const Attenuation pointAttenuation{
+        .constant = 1.0f, .linear = 0.5f, .quadratic = 0.25f};
+    const Attenuation flashlightAttenuation{
+        .constant = 1.0f, .linear = 0.09f, .quadratic = 0.032f};
 
-    std::vector<RandomTransform> transforms;
-    transforms.reserve(ROCK_INSTANCES);
-    for (std::size_t i = 0; i < ROCK_INSTANCES; ++i) {
-        transforms.emplace_back(0.1f, 0.1f, rate(engine), rate(engine));
+    /// Camera
+
+    glm::vec3 cameraPos = {0.0f, 0.0f, -2.0f};
+
+    Model wheatley_model = Model(asset(WHEATLEY_MODEL));
+
+    auto camera = scene.create(
+        {.name = "Camera",
+         .pos = cameraPos,
+         .rot = glm::quatLookAt(glm::normalize(-cameraPos),
+                                glm::vec3(0.0f, 1.0f, 0.0f)),
+         .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_1},
+         .light = Light{.color = white,
+                        .intensity = 0.7f,
+                        .on = false,
+                        .kind = Spotlight{.attenuation = flashlightAttenuation,
+                                          .innerCutoff = glm::radians(15.0f),
+                                          .outerCutoff = glm::radians(20.0f)},
+                        .castsShadows = true},
+         .behaviours = {FlyCamera{}, Flashlight{}, Picker{}, Pickable(0.15f)}});
+    auto mirror_camera = scene.create({
+        .name = "Mirror camera",
+        .parent = camera,
+        .rot = glm::quat(0.0f, 0.0f, 1.0f, 0.0f),
+        .camera = Camera{},
+    });
+    auto player1 = scene.create({
+        .name = "Camera model",
+        .parent = camera,
+        .rot = glm::quat(0.7071068f, 0.0f, 0.7071068f, 0.0f),
+        .scale = glm::vec3(0.01),
+        .meshRenderer = MeshRenderer{.parts = {wheatley_model.meshes()},
+                                     .layer = layers::PLAYER_1},
+    });
+
+    entities.push_back((camera));
+    entities.push_back((mirror_camera));
+    entities.push_back(player1);
+    if (auto flashlight = scene.get(camera)->getLight()) {
+        flashlight->fixture = player1;
     }
-    return transforms;
+
+    scene.setActiveCamera(camera);
+
+    glm::vec3 camera2Pos = {2.0f, 0.0f, 0.0f};
+
+    auto camera2 = scene.create(
+        {.name = "Camera 2",
+         .pos = camera2Pos,
+         .rot = glm::quatLookAt(glm::normalize(-camera2Pos),
+                                glm::vec3(0.0f, 1.0f, 0.0f)),
+         .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_2},
+         .light = Light{.color = white,
+                        .intensity = 0.7f,
+                        .on = false,
+                        .kind = Spotlight{.attenuation = flashlightAttenuation,
+                                          .innerCutoff = glm::radians(15.0f),
+                                          .outerCutoff = glm::radians(20.0f)},
+                        .castsShadows = true},
+         .behaviours = {FlyCamera{}, Flashlight{}, Picker{}, Pickable(0.15f)}});
+    auto player2 = scene.create({
+        .name = "Camera 2 model",
+        .parent = camera2,
+        .rot = glm::quat(0.7071068f, 0.0f, 0.7071068f, 0.0f),
+        .scale = glm::vec3(0.01),
+        .meshRenderer = MeshRenderer{.parts = {wheatley_model.meshes()},
+                                     .layer = layers::PLAYER_2},
+    });
+
+    entities.push_back((camera2));
+    entities.push_back(player2);
+    if (auto flashlight = scene.get(camera2)->getLight()) {
+        flashlight->fixture = player2;
+    }
+
+    scene.get(camera)->addBehaviour<CameraSwitcher>(
+        std::vector<EntityHandle>({camera, camera2}));
+    scene.get(camera2)->addBehaviour<CameraSwitcher>(
+        std::vector<EntityHandle>({camera, camera2}));
+
+    /// Sun
+
+    entities.push_back(scene.create(
+        {.name = "Sun",
+         .pos = glm::vec3(0.0f),
+         .rot = glm::quatLookAt(glm::normalize(glm::vec3(1.0f, -2.0f, 1.5f)),
+                                glm::vec3(0.0f, 1.0f, 0.0f)),
+         .light = Light{.color = white,
+                        .intensity = 1.0f,
+                        .on = true,
+                        .kind = DirectionalLight{},
+                        .castsShadows = true}}));
+
+    /// Box
+
+    const auto cube = BasicMesh::cube(1.0f, Material({}));
+    auto cubeBuffers = cube.buffers();
+    Material boxMaterial(
+        {.diff = {texture(TextureType::DIFFUSE, CONTAINER_TEXTURE,
+                          GL_CLAMP_TO_EDGE)},
+         .spec = {texture(TextureType::SPECULAR, CONTAINER_SPECULAR,
+                          GL_CLAMP_TO_EDGE)},
+         .shininess = 8.0f});
+    auto boxMesh = std::make_shared<const BasicMesh>(cubeBuffers, boxMaterial);
+
+    entities.push_back(scene.create(
+        {.name = "Box",
+         .meshRenderer =
+             MeshRenderer{.parts = {boxMesh},
+                          .outline = Outline{.color = {0.5f, 0.2f, 0.3f}}},
+         .behaviours = {Spin{}, Pickable(0.5f)}}));
+
+    /// Lamps
+
+    Material lampMaterial({.diff = {texture(TextureType::DIFFUSE, LAMP_TEXTURE,
+                                            GL_CLAMP_TO_EDGE)},
+                           .shininess = 32.0f});
+    auto lampMesh =
+        std::make_shared<const BasicMesh>(cubeBuffers, lampMaterial);
+    PointLight lampLight = PointLight{.attenuation = pointAttenuation};
+
+    entities.push_back(scene.create({
+        .name = "Lamp 1",
+        .pos = glm::vec3(0.0f, 2.0f, 0.0f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+    entities.push_back(scene.create({
+        .name = "Lamp 2",
+        .pos = glm::vec3(-1.0f, -2.0f, -1.0f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+    entities.push_back(scene.create({
+        .name = "Lamp 3",
+        .pos = glm::vec3(1.0f, 0.0f, 1.0f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+    entities.push_back(scene.create({
+        .name = "Lamp 4",
+        .pos = glm::vec3(0.0f, 2.0f, -2.5f),
+        .scale = glm::vec3(0.1f),
+        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+        .light = Light{.color = white,
+                       .intensity = 0.5f,
+                       .on = true,
+                       .kind = lampLight,
+                       .castsShadows = true},
+        .behaviours = {Pickable(0.05f)},
+    }));
+
+    /// Rocks
+
+    std::uniform_int_distribution<unsigned> rate(0, 1000);
+    auto rockModel = Model(asset(ROCK_MODEL));
+    for (std::size_t i = 0; i < ROCK_INSTANCES; ++i) {
+        const unsigned angularRate = rate(random_engine::engine());
+        const unsigned linearRate = rate(random_engine::engine());
+        entities.push_back(scene.create(
+            {.name = std::format("Rock {}", i),
+             .pos = glm::vec3{randomIn({.min = -10.0, .max = 10.0}),
+                              randomIn({.min = -10.0, .max = 10.0}),
+                              randomIn({.min = -10.0, .max = 10.0})},
+             .scale = glm::vec3(0.1f),
+             .meshRenderer = MeshRenderer{.parts = rockModel.meshes()},
+             .behaviours = {RockDrift(0.1f, 0.01f, angularRate, linearRate),
+                            Pickable(0.075f)}}));
+    }
+
+    /// Window
+
+    entities.push_back(scene.create(
+        {.name = "Window",
+         .pos = {0.0f, 1.5f, -1.5f},
+         .meshRenderer =
+             MeshRenderer{.parts = {std::make_shared<const BasicMesh>(
+                              BasicMesh::square(
+                                  1.0f, Material({.diff = {texture(
+                                                      TextureType::DIFFUSE,
+                                                      WINDOW_TEXTURE,
+                                                      GL_CLAMP_TO_EDGE)},
+                                                  .spec = {texture(
+                                                      TextureType::SPECULAR, WINDOW_SPECULAR, GL_CLAMP_TO_EDGE)},
+                                                  .shininess = 8.0f,
+                                                  .transparent = true})))}},
+         .behaviours = {Pickable(0.5f)}}));
+
+    /// Floor
+
+    entities.push_back(scene.create(
+        {.name = "Floor",
+         .pos = {0.0f, -1.5f, 0.0f},
+         .rot = {0.7071068f, -0.7071068f, 0.0f, 0.0f},
+         .meshRenderer = MeshRenderer{
+             .parts = {std::make_shared<const BasicMesh>(BasicMesh::square(
+                 10.0f, Material({
+                            .diff = {texture(TextureType::DIFFUSE, WOOD_TEXTURE,
+                                             GL_REPEAT)},
+                            .normalMap = texture(TextureType::NORMAL,
+                                                 WOOD_NORMAL_MAP, GL_REPEAT),
+                            .depthMap = texture(TextureType::DEPTH,
+                                                WOOD_DEPTH_MAP, GL_REPEAT),
+                            .shininess = 16.0f,
+                            .heightScale = 0.02f,
+                            .clipParallaxEdges = true,
+                        })))}}}));
+
+    scene.skyboxes.push_back(buildSkybox());
+
+    return entities;
 }

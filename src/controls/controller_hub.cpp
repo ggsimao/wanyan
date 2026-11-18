@@ -2,24 +2,21 @@
 
 ControllerHub::ControllerHub() {
     _handler.connect(_program);
-    _handler.connect(_camera);
-    _handler.connect(_flashlight);
     _handler.connect(_renderOptions);
     _handler.connect(_screen);
+    _handler.connect(_input);
     _handler.connect(_platform);
 }
 
-void ControllerHub::update(float frameMilliseconds,
-                           const ControlTargets& targets) {
+const InputState& ControllerHub::getInput() const { return *_input; }
+
+void ControllerHub::update(const ControlTargets& targets) {
     // Before polling: key presses copy the current speed when they arrive.
-    _camera->setSpeeds(frameMilliseconds);
+    _input->beginFrame();
     _handler.waitEvent();
 
     _program->processSignals(targets.program);
-    _camera->processSignals(targets.camera);
-    _flashlight->processSignals(targets.flashlight);
     _renderOptions->processSignals(targets.renderOptions);
     _screen->processSignals(targets.screen);
-    _randomTransforms.processSignals(targets.rockTransforms);
     _platform->processSignals(targets.platform);
 }

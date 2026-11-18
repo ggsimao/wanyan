@@ -1,7 +1,8 @@
 #include "shaders/shader_program.h"
 
-#include "lighting.h"
+#include "components/lighting.h"
 #include "shaders/uniform_name.h"
+#include "textures/draw_binding.h"
 
 #include <cmath>
 
@@ -130,6 +131,12 @@ void ShaderProgramBinding::setFloat(std::string_view name,
     glUniform1f(_program.uniformLocation(name), value);
 }
 
+void ShaderProgramBinding::setVec2(std::string_view name,
+                                   const glm::vec2& value) const {
+    assertActive();
+    glUniform2f(_program.uniformLocation(name), value.x, value.y);
+}
+
 void ShaderProgramBinding::setVec3(std::string_view name,
                                    const glm::vec3& value) const {
     assertActive();
@@ -159,6 +166,7 @@ void ShaderProgramBinding::setMat4(std::string_view name,
 
 void ShaderProgramBinding::setMaterial(
     std::string_view name, const MaterialDrawBinding& material) const {
+    assertActive();
     const Material& m = material.material();
     const std::size_t diffuseCount = m.diffuseMaps().size();
     const std::size_t specularCount = m.specularMaps().size();
@@ -193,44 +201,74 @@ void ShaderProgramBinding::setMaterial(
     setInt(loadedSpecular.view(), static_cast<GLint>(specularCount));
 }
 
-void ShaderProgramBinding::setDirectionalLight(
-    std::string_view name, const DirectionalLight& light) const {
+void ShaderProgramBinding::setDirectionalLightData(
+    std::string_view name, const DirLightData& light) const {
+    assertActive();
     UniformName direction("{}.direction", name);
-    setVec3(direction.view(), light.direction);
-    setLightRadiance(name, light);
+    setVec3(direction.view(), light.dir);
+    setLightRadiance(name, *light.light);
+
+    UniformName space("{}.spaceMatrix", name);
+    setMat4(space.view(), light.space);
 }
 
-void ShaderProgramBinding::setPointLight(std::string_view name,
-                                         const PointLight& light) const {
+void ShaderProgramBinding::setPointLightData(
+    std::string_view name, const PointLightData& light) const {
+    assertActive();
+    PointLight point = std::get<PointLight>(light.light->kind);
+
     UniformName position("{}.position", name);
-    setVec3(position.view(), light.position);
-    setAttenuation(name, light.attenuation);
-    setLightRadiance(name, light);
+    setVec3(position.view(), light.pos);
+    setLightRadiance(name, *light.light);
+
+    setAttenuation(name, point.attenuation);
+
+    UniformName nearPlane("{}.nearPlane", name);
+    setFloat(nearPlane.view(), light.nearPlane);
+    UniformName farPlane("{}.farPlane", name);
+    setFloat(farPlane.view(), light.farPlane);
 }
 
-void ShaderProgramBinding::setSpotlight(std::string_view name,
-                                        const Spotlight& light) const {
+void ShaderProgramBinding::setSpotlightData(std::string_view name,
+                                            const SpotlightData& light) const {
+    assertActive();
+    Spotlight spot = std::get<Spotlight>(light.light->kind);
+
     UniformName position("{}.position", name);
     UniformName direction("{}.direction", name);
-    setVec3(position.view(), light.position);
-    setVec3(direction.view(), light.direction);
-    setLightRadiance(name, light);
-    setAttenuation(name, light.attenuation);
+    setVec3(position.view(), light.pos);
+    setVec3(direction.view(), light.dir);
+
+    setLightRadiance(name, *light.light);
+    setAttenuation(name, spot.attenuation);
+
     // The shader compares cosines, which avoids an acos per fragment.
     UniformName phiCos("{}.phiCos", name);
     UniformName gammaCos("{}.gammaCos", name);
-    setFloat(phiCos.view(), std::cos(light.innerCutoff));
-    setFloat(gammaCos.view(), std::cos(light.outerCutoff));
+    UniformName gammaTan("{}.gammaTan", name);
+    setFloat(phiCos.view(), std::cos(spot.innerCutoff));
+    setFloat(gammaCos.view(), std::cos(spot.outerCutoff));
+    setFloat(gammaTan.view(), std::tan(spot.outerCutoff));
+
+    UniformName nearPlane("{}.nearPlane", name);
+    setFloat(nearPlane.view(), light.nearPlane);
+    UniformName farPlane("{}.farPlane", name);
+    setFloat(farPlane.view(), light.farPlane);
+
+    UniformName space("{}.spaceMatrix", name);
+    setMat4(space.view(), light.space);
 }
 
 void ShaderProgramBinding::setLightRadiance(std::string_view name,
                                             const Light& color) const {
+    assertActive();
     UniformName radiance("{}.radiance", name);
     setVec3(radiance.view(), color.effectiveRadiance());
 }
 
 void ShaderProgramBinding::setAttenuation(
     std::string_view name, const Attenuation& attenuation) const {
+    assertActive();
     UniformName constant("{}.attenuation.constant", name);
     UniformName linear("{}.attenuation.linear", name);
     UniformName quadratic("{}.attenuation.quadratic", name);

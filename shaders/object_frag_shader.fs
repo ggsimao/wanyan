@@ -4,8 +4,6 @@ in VERTEX {
     vec3 normal;
     vec2 texCoords;
     mat3 TBN;
-    vec4 dirLightSpaceFragPos;
-    vec4 spotlightSpaceFragPos;
 }
 fs_in;
 
@@ -35,6 +33,8 @@ struct DirLight {
     vec3 direction;
     vec3 radiance;
 
+    mat4 spaceMatrix;
+
     sampler2DShadow shadow_map;
 };
 
@@ -43,6 +43,8 @@ struct PointLight {
     vec3 radiance;
 
     Attenuation attenuation;
+
+    float nearPlane, farPlane;
 
     samplerCubeShadow shadow_map;
 };
@@ -56,6 +58,11 @@ struct Spotlight {
 
     float phiCos;
     float gammaCos;
+    float gammaTan;
+
+    float nearPlane, farPlane;
+
+    mat4 spaceMatrix;
 
     sampler2DShadow shadow_map;
 };
@@ -66,10 +73,14 @@ layout(std140, binding = 0) uniform Matrices {
     mat4 normalMat;
 };
 
-#define NR_POINT_LIGHTS 4
-uniform DirLight dirLight;
-uniform PointLight pointLights[NR_POINT_LIGHTS];
-uniform Spotlight spotlight;
+#define MAX_DIR_LIGHTS 4
+#define MAX_POINT_LIGHTS 4
+#define MAX_SPOTLIGHTS 4
+uniform DirLight dirLights[MAX_DIR_LIGHTS];
+uniform PointLight pointLights[MAX_POINT_LIGHTS];
+uniform Spotlight spotlights[MAX_SPOTLIGHTS];
+
+uniform int loadedDir, loadedPoint, loadedSpot;
 
 uniform vec3 ambientColor;
 
@@ -79,8 +90,6 @@ uniform vec3 ambientColor;
 #define SLOPE_BIAS_TEXELS 4.5
 
 uniform vec3 viewPos;
-
-uniform float pointShadowNearPlane, pointShadowFarPlane;
 
 uniform Material material;
 
@@ -146,7 +155,7 @@ float cubeFaceDepth(float axisDistance, float near, float far) {
 }
 
 float calculatePointShadowValue(samplerCubeShadow shadowMap, vec3 lightPos,
-                                vec3 normal) {
+                                vec3 normal, float nearPlane, float farPlane) {
     vec3 fragToLight = fs_in.pos - lightPos;
 
     // Your existing bias, unchanged: still in world units.
@@ -160,8 +169,8 @@ float calculatePointShadowValue(samplerCubeShadow shadowMap, vec3 lightPos,
     // which is also what picks the face.
     vec3 a = abs(fragToLight);
     float axisDistance = max(a.x, max(a.y, a.z));
-    float reference = cubeFaceDepth(axisDistance - shadowBias,
-                                    pointShadowNearPlane, pointShadowFarPlane);
+    float reference =
+        cubeFaceDepth(axisDistance - shadowBias, nearPlane, farPlane);
 
     // The hardware compares `reference` with the stored depths: 1 where lit,
     // 0 where shadowed, and blends across the 4 nearest texels at edges.
@@ -169,8 +178,44 @@ float calculatePointShadowValue(samplerCubeShadow shadowMap, vec3 lightPos,
     return 1.0 - lit;
 }
 
-float calculateShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
-                           vec3 lightDir, vec3 normal) {
+float calculateSpotShadowValue(vec4 fragPosLightSpace,
+                               sampler2DShadow shadowMap, vec3 lightPos,
+                               vec3 lightDir, vec3 normal, float tanOuter,
+                               float nearPlane, float farPlane) {
+    vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
+    vec3 fragPos = fs_in.pos;
+
+    float cosTheta = max(dot(normal, normalize(lightPos - fragPos)), 0.0);
+    float axisDistance = dot(fragPos - lightPos, normalize(lightDir));
+
+    if (axisDistance <= nearPlane || axisDistance > farPlane)
+        return 0.0;
+
+    float texelWorld =
+        2.0 * axisDistance * tanOuter / float(textureSize(shadowMap, 0).x);
+    float worldBias =
+        texelWorld * (MIN_BIAS_TEXELS + SLOPE_BIAS_TEXELS * (1.0 - cosTheta));
+    float reference =
+        cubeFaceDepth(axisDistance - worldBias, nearPlane, farPlane);
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    int kernel_half = (PCF_KERNEL_SIZE - 1) / 2;
+    for (int x = -kernel_half; x <= kernel_half; ++x) {
+        for (int y = -kernel_half; y <= kernel_half; ++y) {
+            vec2 offset = vec2(x, y) * texelSize;
+            // 1 where lit, 0 where shadowed, blended across 4 texels at edges.
+            float lit =
+                texture(shadowMap, vec3(projCoords.xy + offset, reference));
+            shadow += 1.0 - lit;
+        }
+    }
+    shadow /= float(PCF_KERNEL_SIZE * PCF_KERNEL_SIZE);
+
+    return shadow;
+}
+
+float calculateDirShadowValue(vec4 fragPosLightSpace, sampler2DShadow shadowMap,
+                              vec3 lightDir, vec3 normal) {
     vec3 projCoords = (fragPosLightSpace.xyz / fragPosLightSpace.w) * 0.5 + 0.5;
 
     float currentDepth = projCoords.z;
@@ -214,18 +259,23 @@ float calculateAttenuation(vec3 lightPos, vec3 fragPos,
     return value;
 }
 
-vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir,
-                               vec3 diff_tex_sum, vec3 spec_tex_sum) {
+vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 fragPos,
+                               vec3 viewDir, vec3 diff_tex_sum,
+                               vec3 spec_tex_sum) {
     vec3 lightDir = normalize(-light.direction);
+    if (dot(normalize(fs_in.normal), lightDir) <= 0.0) {
+        return vec3(0.0);
+    }
+
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
 
     // float shadow = 0;
-    float shadow =
-        calculateShadowValue(fs_in.dirLightSpaceFragPos, light.shadow_map,
-                             lightDir, normalize(fs_in.normal));
+    float shadow = calculateDirShadowValue(
+        light.spaceMatrix * vec4(fragPos, 1.0), light.shadow_map, lightDir,
+        normalize(fs_in.normal));
 
     vec3 directional_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -236,6 +286,10 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 viewDir,
 vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
                          vec3 viewDir, vec3 diff_tex_sum, vec3 spec_tex_sum) {
     vec3 lightDir = normalize(light.position - fragPos);
+    if (dot(normalize(fs_in.normal), lightDir) <= 0.0) {
+        return vec3(0.0);
+    }
+
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -246,7 +300,8 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
 
     // float shadow = 0;
     float shadow = calculatePointShadowValue(light.shadow_map, light.position,
-                                             normalize(fs_in.normal));
+                                             normalize(fs_in.normal),
+                                             light.nearPlane, light.farPlane);
 
     vec3 pointlight_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -258,6 +313,10 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
 vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
                         vec3 viewDir, vec3 diff_tex_sum, vec3 spec_tex_sum) {
     vec3 lightDir = normalize(light.position - fragPos);
+    if (dot(normalize(fs_in.normal), lightDir) <= 0.0) {
+        return vec3(0.0);
+    }
+
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
@@ -271,9 +330,10 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
         calculateAttenuation(light.position, fragPos, light.attenuation);
 
     // float shadow = 0;
-    float shadow =
-        calculateShadowValue(fs_in.spotlightSpaceFragPos, light.shadow_map,
-                             lightDir, normalize(fs_in.normal));
+    float shadow = calculateSpotShadowValue(
+        light.spaceMatrix * vec4(fragPos, 1.0), light.shadow_map,
+        light.position, light.direction, normalize(fs_in.normal),
+        light.gammaTan, light.nearPlane, light.farPlane);
 
     vec3 spotlight_value = calculateLightValue(
         diff, spec, light.radiance, diff_tex_sum, spec_tex_sum, shadow);
@@ -330,19 +390,27 @@ void main() {
         spec_tex_sum = mix(spec_tex_sum, curr_tex.rgb, curr_tex.a);
     }
 
-    vec3 result = calculateDirectionalLight(dirLight, normal, viewDir,
-                                            diff_tex_sum, spec_tex_sum);
+    vec3 result = vec3(0.0f);
 
-    for (int i = 0; i < NR_POINT_LIGHTS; i++) {
+    for (int i = 0; i < loadedDir; i++) {
+        vec3 dirlight_value = calculateDirectionalLight(
+            dirLights[i], normal, fragPos, viewDir, diff_tex_sum, spec_tex_sum);
+        result += dirlight_value;
+    }
+
+    for (int i = 0; i < loadedPoint; i++) {
         vec3 pointlight_value =
             calculatePointLight(pointLights[i], normal, fragPos, viewDir,
                                 diff_tex_sum, spec_tex_sum);
         result += pointlight_value;
     }
 
-    vec3 spotlight_value = calculateSpotlight(
-        spotlight, normal, fragPos, viewDir, diff_tex_sum, spec_tex_sum);
-    result += spotlight_value;
+    for (int i = 0; i < loadedSpot; i++) {
+        vec3 spotlight_value =
+            calculateSpotlight(spotlights[i], normal, fragPos, viewDir,
+                               diff_tex_sum, spec_tex_sum);
+        result += spotlight_value;
+    }
 
     result += ambientColor * diff_tex_sum;
 
