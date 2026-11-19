@@ -1,5 +1,3 @@
-Markdown · README.md
-
 # Wanyan
 
 A real-time OpenGL 4.3 renderer in C++20, built while working through [LearnOpenGL](https://learnopengl.com/). It started as a port of an earlier Rust version and grew from there into a small scene graph with entities, components and behaviours.
