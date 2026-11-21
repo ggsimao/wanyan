@@ -10,6 +10,13 @@
 #include <stdexcept>
 #include <utility>
 
+namespace {
+    constexpr std::size_t NR_DIFFUSE_TEXTURES =
+        3;  // must be the same as in the shader
+    constexpr std::size_t NR_SPECULAR_TEXTURES =
+        3;  // must be the same as in the shader
+}  // namespace
+
 ShaderProgram::ShaderProgram(std::string label, const VertexShader& vertex,
                              const FragmentShader& fragment)
     : _label(std::move(label)) {
@@ -178,6 +185,14 @@ void ShaderProgramBinding::setMaterial(
     for (std::size_t i = 0; i < specularCount; ++i) {
         UniformName specular("{}.specularTextures[{}]", name, i);
         setInt(specular.view(), material.specularUnit(i));
+    }
+    for (std::size_t i = diffuseCount; i < NR_DIFFUSE_TEXTURES; ++i) {
+        UniformName diffuse("{}.diffuseTextures[{}]", name, i);
+        setInt(diffuse.view(), material.diffuseUnit(0));
+    }
+    for (std::size_t i = specularCount; i < NR_SPECULAR_TEXTURES; ++i) {
+        UniformName specular("{}.specularTextures[{}]", name, i);
+        setInt(specular.view(), material.specularUnit(0));
     }
 
     UniformName normal("{}.normalTexture", name);

@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
                     .count();
             previousFrame = now;
             context.dt = frameMilliseconds;
+            context.scene.time.advance(context.dt);
 
             {
                 auto timer = stats.time(debug::FrameStats::UPDATE);

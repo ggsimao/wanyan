@@ -2,6 +2,7 @@
 
 #include "drawables/skybox.h"
 #include "scene/entity.h"
+#include "scene/time.h"
 
 #include <vector>
 
@@ -9,6 +10,7 @@ class Scene {
   public:
     std::vector<Skybox> skyboxes;
     glm::vec3 ambient;
+    Time time = Time(24000, 365);
     Scene(std::vector<Skybox> skyboxes, glm::vec3 ambient = glm::vec3(0.0f));
     Scene(const Scene&) = delete;
     Scene& operator=(const Scene&) = delete;

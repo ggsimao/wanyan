@@ -14,48 +14,53 @@ const int KERNEL_SIZE = 3;
 const float kernel[KERNEL_SIZE][KERNEL_SIZE] =
     float[][](float[](2, 2, 2), float[](2, -15, 2), float[](2, 2, 2));
 
+vec4 applyFiltering(ivec2 tex_size, ivec2 center, int samples) {
+    vec4 pixelColor = vec4(0);
+    for (int i = 0; i < KERNEL_SIZE; i++) {
+        for (int j = 0; j < KERNEL_SIZE; j++) {
+            ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0),
+                                      tex_size - ivec2(1, 1));
+            pixelColor +=
+                texelFetch(screenTexture, texelCoords, samples) * kernel[i][j];
+        }
+    }
+    return pixelColor;
+}
+
+vec3 applySampling(ivec2 tex_size, ivec2 center, int samples,
+                   bool shouldFilter) {
+    vec4 pixelColor = vec4(0);
+    for (int s = 0; s < samples; s++) {
+        if (shouldFilter)
+            pixelColor += applyFiltering(tex_size, center, s) / samples;
+        else
+            pixelColor += texelFetch(screenTexture, center, s) / samples;
+    }
+    return pixelColor.rgb;
+}
+
 void main() {
     ivec2 tex_size = textureSize(screenTexture);
     ivec2 center = ivec2(texCoords * tex_size);
-    fragColor = vec4(0);
+    vec3 pixelColor = vec3(0);
     if (applyFilter && applyMSAA) {
-        for (int s = 0; s < sampleCount; s++) {
-            vec4 sampleColor = vec4(0);
-            for (int i = 0; i < KERNEL_SIZE; i++) {
-                for (int j = 0; j < KERNEL_SIZE; j++) {
-                    ivec2 texelCoords =
-                        clamp(center + ivec2(i - 1, j - 1), ivec2(0, 0),
-                              tex_size - ivec2(1, 1));
-                    sampleColor += texelFetch(screenTexture, texelCoords, s) *
-                                   kernel[i][j];
-                }
-            }
-            fragColor += sampleColor / sampleCount;
-        }
-
+        pixelColor = applySampling(tex_size, center, sampleCount, true);
     } else if (applyFilter && !applyMSAA) {
-        for (int i = 0; i < KERNEL_SIZE; i++) {
-            for (int j = 0; j < KERNEL_SIZE; j++) {
-                ivec2 texelCoords = clamp(center + ivec2(i - 1, j - 1),
-                                          ivec2(0, 0), tex_size - ivec2(1, 1));
-                fragColor +=
-                    texelFetch(screenTexture, texelCoords, 0) * kernel[i][j];
-            }
-        }
+        pixelColor = applySampling(tex_size, center, 1, true);
     } else if (applyMSAA) {
-        for (int s = 0; s < sampleCount; s++) {
-            vec4 sampleColor = texelFetch(screenTexture, center, s);
-            fragColor += sampleColor / sampleCount;
-        }
+        pixelColor = applySampling(tex_size, center, sampleCount, false);
     } else {
-        fragColor = texelFetch(screenTexture, center, 0);
+        pixelColor = applySampling(tex_size, center, 1, false);
     }
-    fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+    pixelColor =
+        pixelColor / (pixelColor + vec3(1.0));        // reinhard tone mapping
+    pixelColor = pow(pixelColor, vec3(1.0 / gamma));  // gamma correction
     if (crosshair) {
         vec2 fromCenter = abs(gl_FragCoord.xy - resolution * 0.5);
         bool onCross = (fromCenter.x < 1.0 && fromCenter.y < 8.0) ||
                        (fromCenter.y < 1.0 && fromCenter.x < 8.0);
         if (onCross)
-            fragColor.rgb = 1.0 - fragColor.rgb;
+            pixelColor = 1.0 - pixelColor;
     }
+    fragColor = vec4(pixelColor, 1.0);
 }

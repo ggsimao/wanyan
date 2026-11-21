@@ -49,7 +49,8 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
-    : _texture(clampSamples(samples)), _width(width), _height(height) {
+    : _texture(clampSamples(samples), GL_RGBA16F), _width(width),
+      _height(height) {
     glGenFramebuffers(1, &_id);
     if (_id == 0)
         throw std::runtime_error("Couldn't make a framebuffer");

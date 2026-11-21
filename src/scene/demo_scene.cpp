@@ -6,6 +6,8 @@
 #include "components/behaviours/pickable.h"
 #include "components/behaviours/picker.h"
 #include "components/behaviours/rock_drift.h"
+#include "components/behaviours/season_cycle.h"
+#include "components/behaviours/sky_light_cycle.h"
 #include "components/mesh_renderer.h"
 
 #include "drawables/basic_mesh.h"
@@ -14,6 +16,7 @@
 
 #include "random.h"
 
+#include "scene/entity_handle.h"
 #include "scene/layers.h"
 #include "shaders/shader_program.h"
 
@@ -88,6 +91,8 @@ namespace {
     constexpr const char* WHEATLEY_MODEL =
         "resources/models/wheatley/scene.gltf";
 
+    constexpr float LATITUTE_DEG = 23.5f;
+
     // Not used yet; kept for later. Commented out because unused constants
     // are a warning, and -Werror makes that an error.
     // constexpr const char* WALL_TEXTURE = "resources/textures/wall.jpg";
@@ -156,6 +161,7 @@ DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
 
 std::vector<EntityHandle> buildDemoScene(Scene& scene) {
     scene.ambient = {0.02, 0.02, 0.02};
+    scene.time = Time(12000, 8);
 
     std::vector<EntityHandle> entities;
 
@@ -191,7 +197,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         .name = "Mirror camera",
         .parent = camera,
         .rot = glm::quat(0.0f, 0.0f, 1.0f, 0.0f),
-        .camera = Camera{},
+        .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_1},
     });
     auto player1 = scene.create({
         .name = "Camera model",
@@ -249,16 +255,27 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
 
     /// Sun
 
-    entities.push_back(scene.create(
-        {.name = "Sun",
-         .pos = glm::vec3(0.0f),
-         .rot = glm::quatLookAt(glm::normalize(glm::vec3(1.0f, -2.0f, 1.5f)),
-                                glm::vec3(0.0f, 1.0f, 0.0f)),
-         .light = Light{.color = white,
-                        .intensity = 1.0f,
-                        .on = true,
-                        .kind = DirectionalLight{},
-                        .castsShadows = true}}));
+    EntityHandle skyPivot = scene.create({.name = "Sky pivot"});
+    scene.get(skyPivot)->getTransform().setRotation(
+        glm::angleAxis(glm::radians(LATITUTE_DEG) - glm::half_pi<float>(),
+                       glm::vec3(1, 0, 0)),
+        Space::Local);
+    EntityHandle season = scene.create(
+        {.name = "Season", .parent = skyPivot, .behaviours = {SeasonCycle()}});
+    EntityHandle sun =
+        scene.create({.name = "Sun",
+                      .parent = season,
+                      .pos = glm::vec3(0.0f),
+                      .light = Light{.color = white,
+                                     .intensity = 0.0f,
+                                     .on = true,
+                                     .kind = DirectionalLight{},
+                                     .castsShadows = true},
+                      .behaviours = {SkyLightCycle(1.0f, 200.0f)}});
+
+    entities.push_back(skyPivot);
+    entities.push_back(season);
+    entities.push_back(sun);
 
     /// Box
 
@@ -277,7 +294,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
          .meshRenderer =
              MeshRenderer{.parts = {boxMesh},
                           .outline = Outline{.color = {0.5f, 0.2f, 0.3f}}},
-         .behaviours = {Spin{}, Pickable(0.5f)}}));
+         .behaviours = {Pickable(0.5f)}}));
 
     /// Lamps
 
@@ -310,22 +327,22 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
         .light = lampLightColor,
         .behaviours = {Pickable(0.05f)},
     }));
-    entities.push_back(scene.create({
-        .name = "Lamp 3",
-        .pos = glm::vec3(1.0f, 0.0f, 1.0f),
-        .scale = glm::vec3(0.1f),
-        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-        .light = lampLightColor,
-        .behaviours = {Pickable(0.05f)},
-    }));
-    entities.push_back(scene.create({
-        .name = "Lamp 4",
-        .pos = glm::vec3(0.0f, 2.0f, -2.5f),
-        .scale = glm::vec3(0.1f),
-        .meshRenderer = MeshRenderer{.parts = {lampMesh}},
-        .light = lampLightColor,
-        .behaviours = {Pickable(0.05f)},
-    }));
+    // entities.push_back(scene.create({
+    //     .name = "Lamp 3",
+    //     .pos = glm::vec3(1.0f, 0.0f, 1.0f),
+    //     .scale = glm::vec3(0.1f),
+    //     .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+    //     .light = lampLightColor,
+    //     .behaviours = {Pickable(0.05f)},
+    // }));
+    // entities.push_back(scene.create({
+    //     .name = "Lamp 4",
+    //     .pos = glm::vec3(0.0f, 2.0f, -2.5f),
+    //     .scale = glm::vec3(0.1f),
+    //     .meshRenderer = MeshRenderer{.parts = {lampMesh}},
+    //     .light = lampLightColor,
+    //     .behaviours = {Pickable(0.05f)},
+    // }));
 
     /// Rocks
 

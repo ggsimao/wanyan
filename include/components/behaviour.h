@@ -6,13 +6,16 @@
 #include "components/behaviours/pickable.h"
 #include "components/behaviours/picker.h"
 #include "components/behaviours/rock_drift.h"
+#include "components/behaviours/season_cycle.h"
+#include "components/behaviours/sky_light_cycle.h"
 #include "components/behaviours/spin.h"
 #include "components/frame_context.h"
 
 #include <variant>
 
 using Behaviour = std::variant<Spin, RockDrift, FlyCamera, Flashlight, Pickable,
-                               Picker, CameraSwitcher>;  // one line to extend
+                               Picker, CameraSwitcher, SkyLightCycle,
+                               SeasonCycle>;  // one line to extend
 
 inline BehaviourBase& base(Behaviour& behaviour) {
     return std::visit([](BehaviourBase& b) -> BehaviourBase& { return b; },
