@@ -1,4 +1,5 @@
 #include "data/frame_buffer.h"
+#include "textures/helpers.h"
 
 #include <stb/stb_image_write.h>
 
@@ -48,9 +49,8 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
-    : _texture(clampSamples(samples), GL_RGBA16F), _width(width),
-      _height(height) {
+FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, TextureType type)
+    : _texture(type), _width(width), _height(height) {
     glGenFramebuffers(1, &_id);
     if (_id == 0)
         throw std::runtime_error("Couldn't make a framebuffer");
@@ -64,8 +64,7 @@ FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, GLsizei samples)
 
         {
             RenderBufferBinding rbo(_rbo);
-            rbo.createDepthStencilStorageMultisample(_width, _height,
-                                                     _texture.samples());
+            rbo.createDepthStencilStorage(_width, _height);
         }
         bound.attachDepthStencil(_rbo);
 
@@ -114,7 +113,7 @@ GLsizei FrameBuffer::width() const { return _width; }
 
 GLsizei FrameBuffer::height() const { return _height; }
 
-const Texture2DMultisample& FrameBuffer::texture() const { return _texture; }
+const Texture2D& FrameBuffer::texture() const { return _texture; }
 
 void FrameBuffer::bindDraw() const {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _id);
@@ -132,17 +131,9 @@ void FrameBuffer::clearReadBinding() {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
 
-GLsizei FrameBuffer::clampSamples(GLsizei requested) {
-    // 16x MSAA isn't supported everywhere; asking for more than GL_MAX_SAMPLES
-    // leaves the framebuffer incomplete.
-    GLint maxSamples = 1;
-    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
-    return std::clamp<GLsizei>(requested, 1, maxSamples);
-}
-
 void FrameBuffer::writeToFile(const std::filesystem::path& path) const {
     ReadFrameBufferBinding from(*this);
-    auto to = DrawFrameBufferBinding::screen();
+    auto to = DrawFrameBufferBinding::screen(_width, _height);
     gl::blit(from, to, _width, _height);
 
     std::vector<unsigned char> pixels(static_cast<std::size_t>(_width) *
@@ -158,15 +149,27 @@ void FrameBuffer::writeToFile(const std::filesystem::path& path) const {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-DrawFrameBufferBinding DrawFrameBufferBinding::screen() {
-    return DrawFrameBufferBinding(nullptr);
+DrawFrameBufferBinding::DrawFrameBufferBinding(const FrameBuffer& fbo)
+    : DrawBindingBase(fbo) {
+    glGetIntegerv(GL_VIEWPORT, _previousViewport);
+    glViewport(0, 0, fbo.width(), fbo.height());
 }
 
-void DrawFrameBufferBinding::attachColor(const Texture2DMultisample& texture,
+DrawFrameBufferBinding::~DrawFrameBufferBinding() {
+    glViewport(_previousViewport[0], _previousViewport[1], _previousViewport[2],
+               _previousViewport[3]);
+}
+
+DrawFrameBufferBinding DrawFrameBufferBinding::screen(GLsizei width,
+                                                      GLsizei height) {
+    return DrawFrameBufferBinding(nullptr, width, height);
+}
+
+void DrawFrameBufferBinding::attachColor(const Texture2D& texture,
                                          GLenum attachment) {
     assertActive();
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, attachment,
-                           GL_TEXTURE_2D_MULTISAMPLE, texture.id(), 0);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, attachment, GL_TEXTURE_2D,
+                           texture.id(), 0);
 }
 
 void DrawFrameBufferBinding::attachDepthStencil(const RenderBuffer& rbo) {
@@ -212,7 +215,7 @@ void gl::blit(const ReadFrameBufferBinding& from,
               GLbitfield mask, GLenum filter) {
     from.assertActive();
     to.assertActive();
-    // Resolving a multisampled source requires identical source and destination
+    // Resolving a source requires identical source and destination
     // sizes.
     glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, mask, filter);
 }

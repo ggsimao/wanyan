@@ -1,20 +1,19 @@
 #pragma once
 
 #include "data/render_buffer.h"
-#include "textures/texture_2d_multisample.h"
+#include "textures/helpers.h"
+#include "textures/texture_2d.h"
 
 #include <GL/glew.h>
 #include <filesystem>
 #include <glm/vec4.hpp>
 
-inline constexpr GLsizei DEFAULT_SAMPLES = 4;
-
-// Multisampled offscreen render target: a colour texture plus a depth/stencil
+// Offscreen render target: a colour texture plus a depth/stencil
 // renderbuffer. Fully set up (or throws) on construction.
 class FrameBuffer {
   public:
     FrameBuffer(GLsizei width, GLsizei height,
-                GLsizei samples = DEFAULT_SAMPLES);
+                TextureType type = TextureType::ATTACHMENT);
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer& operator=(const FrameBuffer&) = delete;
     FrameBuffer(FrameBuffer&& other) noexcept;
@@ -24,24 +23,23 @@ class FrameBuffer {
     GLuint id() const;
     GLsizei width() const;
     GLsizei height() const;
-    const Texture2DMultisample& texture() const;
+    const Texture2D& texture() const;
 
     void bindDraw() const;
     void bindRead() const;
     static void clearDrawBinding();
     static void clearReadBinding();
 
-    // Resolves the multisampled contents into the window's framebuffer.
+    // Resolves the contents into the window's framebuffer.
     void blit() const;
     // Blits, reads the window's framebuffer back and saves it (.png, .jpg,
     // .bmp, .tga).
     void writeToFile(const std::filesystem::path& path) const;
 
   private:
-    static GLsizei clampSamples(GLsizei requested);
     void release() noexcept;
 
-    Texture2DMultisample _texture;
+    Texture2D _texture;
     RenderBuffer _rbo;
     GLuint _id = 0;
     GLsizei _width = 0, _height = 0;
@@ -55,11 +53,12 @@ using ReadBindingBase = ScopedBinding<FrameBuffer, &FrameBuffer::bindRead,
 // Where rendering goes: draw calls, clears, attachments, completeness.
 class DrawFrameBufferBinding : DrawBindingBase {
   public:
-    explicit DrawFrameBufferBinding(const FrameBuffer& fbo)
-        : DrawBindingBase(fbo) {}
-    [[nodiscard]] static DrawFrameBufferBinding screen();
+    explicit DrawFrameBufferBinding(const FrameBuffer& fbo);
+    ~DrawFrameBufferBinding();
+    [[nodiscard]] static DrawFrameBufferBinding screen(GLsizei width,
+                                                       GLsizei height);
 
-    void attachColor(const Texture2DMultisample& texture,
+    void attachColor(const Texture2D& texture,
                      GLenum attachment = GL_COLOR_ATTACHMENT0);
     void attachDepthStencil(const RenderBuffer& rbo);
     void clear(const glm::vec4& color, GLbitfield mask = GL_COLOR_BUFFER_BIT |
@@ -70,8 +69,13 @@ class DrawFrameBufferBinding : DrawBindingBase {
     using DrawBindingBase::assertActive;
 
   private:
-    explicit DrawFrameBufferBinding(std::nullptr_t)
-        : DrawBindingBase(nullptr) {}
+    explicit DrawFrameBufferBinding(std::nullptr_t, GLsizei width,
+                                    GLsizei height)
+        : DrawBindingBase(nullptr) {
+        glViewport(0, 0, width, height);
+        glGetIntegerv(GL_VIEWPORT, _previousViewport);
+    }
+    GLint _previousViewport[4] = {0, 0, 0, 0};
 };
 
 // Where pixels come from: glReadPixels and the source side of a blit.

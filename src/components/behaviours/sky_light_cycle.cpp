@@ -10,9 +10,9 @@ SkyLightCycle::SkyLightCycle(float duration, float maxIntensity,
       _ambient(glm::vec3(0.0f)), _controlsAmbient(controlsAmbient) {}
 
 void SkyLightCycle::update(const FrameContext& context) {
-    float days = context.scene.time.getDays();
+    float days = context.scene.time.days;
     const float dayFraction =
-        std::fmod(days, _duration);  // 0 at midnight, 0.5 at noon
+        std::fmod(days, _duration) / _duration;  // 0 at midnight, 0.5 at noon
     const float hourAngle =
         glm::two_pi<float>() * (dayFraction - 0.5f);  // 0 at solar noon
     entity->getTransform().setRotation(
@@ -28,19 +28,17 @@ void SkyLightCycle::calculateLight(const FrameContext& context) {
         const float visible = glm::smoothstep(
             -0.05f, 0.1f, elevation);  // 0 below the horizon, 1 a bit above it
         float intensity = _maxIntensity * visible;
+        if (!_ambient && _controlsAmbient) {
+            _ambient = context.scene.ambient;
+        }
+        if (_ambient && _controlsAmbient) {
+            context.scene.ambient = _ambient.value() * visible;
+        }
         if (intensity <= 0) {
             light->on = false;
-            if (!_ambient && _controlsAmbient) {
-                _ambient = context.scene.ambient;
-                context.scene.ambient = glm::vec3(0.0f);
-            }
             return;
         }
         light->on = true;
-        if (_ambient && _controlsAmbient) {
-            context.scene.ambient = _ambient.value();
-            _ambient = std::nullopt;
-        }
         const float zenithDeg = 90.0f - glm::degrees(std::asin(elevation));
         const float airMass =
             1.0f /

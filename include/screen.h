@@ -1,6 +1,7 @@
 #pragma once
 
 #include "data/frame_buffer.h"
+#include "data/frame_buffer_multisample.h"
 #include "drawables/canvas.h"
 #include "scene/entity_handle.h"
 
@@ -34,7 +35,7 @@ struct ScreenParameters {
 class Screen {
   public:
     Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
-           const ShaderProgram& shader);
+           const ShaderProgram& shader, const ShaderProgram& luminanceShader);
     // Deleted because _canvas points to framebuffer
     Screen(const Screen&) = delete;
     Screen& operator=(const Screen&) = delete;
@@ -44,6 +45,8 @@ class Screen {
     // Renders the scene, as seen by the camera, into this screen's framebuffer.
     void drawOnFramebuffer(SceneRenderer& renderer, const Scene& scene,
                            EntityHandle cameraHandle) const;
+
+    void drawLuminance() const;
 
     // Draws this screen's image into another screen's framebuffer, scaled and
     // offset in clip space (e.g. 0.3 and (0.5, 0.5) for a corner inset).
@@ -59,8 +62,9 @@ class Screen {
   private:
     void present(const glm::mat4& model, const ScreenParameters& effects) const;
 
-    FrameBuffer _framebuffer;
+    FrameBufferMultisample _framebuffer;
+    FrameBuffer _luminanceFramebuffer;
     Canvas _canvas;
-    const ShaderProgram& _shader;
+    const ShaderProgram &_shader, &_luminanceShader;
     ScreenParameters _parameters;
 };

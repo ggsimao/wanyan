@@ -77,10 +77,10 @@ int main(int argc, char** argv) {
 
         SceneRenderer renderer(shaders.forRenderer(), matrices);
         Screen screen(platform.width(), platform.height(), CLEAR_COLOR,
-                      shaders.screen);
+                      shaders.screen, shaders.luminance);
         screen.parameters().crosshair = true;
         Screen mirror(platform.width(), platform.height(), CLEAR_COLOR,
-                      shaders.screen);
+                      shaders.screen, shaders.luminance);
 
         Program program;
         ControllerHub controls;
@@ -126,6 +126,7 @@ int main(int argc, char** argv) {
                 const auto mainCamera = scene.getActiveCamera();
                 screen.drawOnFramebuffer(renderer, scene,
                                          mainCamera->getHandle());
+                screen.drawLuminance();
                 if (screen.parameters().mirror &&
                     mainCamera->getChildrenCount() > 0) {
                     const auto backCamera = mainCamera->getChild(0);

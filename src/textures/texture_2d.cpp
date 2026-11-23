@@ -101,6 +101,12 @@ void Texture2D::load(const std::filesystem::path& path) {
     tex.generateMipmap();
 }
 
+void Texture2D::createTexture(GLsizei width, GLsizei height) {
+    Texture2DBinding tex(*this);
+    tex.image(this->internalFormat(), width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+              NULL);
+}
+
 Texture2D Texture2D::fromColor(TextureType type, const glm::vec3& color) {
     Texture2D texture(type);
     const unsigned char data[4] = {
@@ -190,6 +196,8 @@ GLenum Texture2D::internalFormat() const {
             return GL_RGBA8;
         case TextureType::DEPTH:
             return GL_R8;
+        case TextureType::LUMINANCE:
+            return GL_R16F;
     }
     return GL_RGBA8;  // unreachable; keeps -Wreturn-type quiet
 }

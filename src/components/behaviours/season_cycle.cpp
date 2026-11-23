@@ -7,8 +7,8 @@
 void SeasonCycle::update(const FrameContext& context) {
     const float declination =
         -glm::radians(23.44f) *
-        std::cos(glm::two_pi<float>() * context.scene.time.getDays() /
-                 context.scene.time.getYearDuration());
+        std::cos(glm::two_pi<float>() * context.scene.time.days /
+                 context.scene.time.yearDuration);
     entity->getTransform().setRotation(
         glm::angleAxis(-declination, glm::vec3(1, 0, 0)), Space::Local);
 }

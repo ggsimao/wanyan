@@ -4,8 +4,9 @@
 
 #include <GL/glew.h>
 
-// Multisampled colour texture, used as a FrameBuffer's colour attachment.
-// Has no filters or mipmaps: shaders read individual samples with texelFetch.
+// Multisampled colour texture, used as a FrameBufferMultisample's colour
+// attachment. Has no filters or mipmaps: shaders read individual samples with
+// texelFetch.
 class Texture2DMultisample {
   public:
     explicit Texture2DMultisample(GLsizei samples,

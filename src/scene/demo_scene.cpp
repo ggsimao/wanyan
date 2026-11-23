@@ -59,6 +59,8 @@ namespace {
     constexpr const char* BUFFER_FRAG_SHADER = "shaders/buffer_frag_shader.fs";
     constexpr const char* SCREEN_VERT_SHADER = "shaders/screen_vert_shader.vs";
     constexpr const char* SCREEN_FRAG_SHADER = "shaders/screen_frag_shader.fs";
+    constexpr const char* LUMINANCE_FRAG_SHADER =
+        "shaders/luminance_frag_shader.fs";
     constexpr const char* SKYBOX_VERT_SHADER = "shaders/skybox_vert_shader.vs";
     constexpr const char* SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
     constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
@@ -155,13 +157,15 @@ DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
                                  asset(SKYBOX_FRAG_SHADER)),
         ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER),
                                  asset(SHADOW_FRAG_SHADER)),
+        ShaderProgram::fromFiles("Luminance", asset(SCREEN_VERT_SHADER),
+                                 asset(LUMINANCE_FRAG_SHADER)),
         std::move(pointShadow),
     };
 }
 
 std::vector<EntityHandle> buildDemoScene(Scene& scene) {
     scene.ambient = {0.02, 0.02, 0.02};
-    scene.time = Time(12000, 8);
+    scene.time = Time(48000, 8);
 
     std::vector<EntityHandle> entities;
 
@@ -179,19 +183,22 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
 
     Model wheatley_model = Model(asset(WHEATLEY_MODEL));
 
+    Light flashlight =
+        Light{.color = white,
+              .intensity = 2.5f,
+              .on = false,
+              .kind = Spotlight{.attenuation = flashlightAttenuation,
+                                .innerCutoff = glm::radians(15.0f),
+                                .outerCutoff = glm::radians(20.0f)},
+              .castsShadows = true};
+
     auto camera = scene.create(
         {.name = "Camera",
          .pos = cameraPos,
          .rot = glm::quatLookAt(glm::normalize(-cameraPos),
                                 glm::vec3(0.0f, 1.0f, 0.0f)),
          .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_1},
-         .light = Light{.color = white,
-                        .intensity = 0.7f,
-                        .on = false,
-                        .kind = Spotlight{.attenuation = flashlightAttenuation,
-                                          .innerCutoff = glm::radians(15.0f),
-                                          .outerCutoff = glm::radians(20.0f)},
-                        .castsShadows = true},
+         .light = flashlight,
          .behaviours = {FlyCamera{}, Flashlight{}, Picker{}, Pickable(0.15f)}});
     auto mirror_camera = scene.create({
         .name = "Mirror camera",
@@ -225,13 +232,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
          .rot = glm::quatLookAt(glm::normalize(-camera2Pos),
                                 glm::vec3(0.0f, 1.0f, 0.0f)),
          .camera = Camera{.mask = layers::ALL & ~layers::PLAYER_2},
-         .light = Light{.color = white,
-                        .intensity = 0.7f,
-                        .on = false,
-                        .kind = Spotlight{.attenuation = flashlightAttenuation,
-                                          .innerCutoff = glm::radians(15.0f),
-                                          .outerCutoff = glm::radians(20.0f)},
-                        .castsShadows = true},
+         .light = flashlight,
          .behaviours = {FlyCamera{}, Flashlight{}, Picker{}, Pickable(0.15f)}});
     auto player2 = scene.create({
         .name = "Camera 2 model",
@@ -271,7 +272,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
                                      .on = true,
                                      .kind = DirectionalLight{},
                                      .castsShadows = true},
-                      .behaviours = {SkyLightCycle(1.0f, 200.0f)}});
+                      .behaviours = {SkyLightCycle(1.0f, 100.0f)}});
 
     entities.push_back(skyPivot);
     entities.push_back(season);
@@ -294,7 +295,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
          .meshRenderer =
              MeshRenderer{.parts = {boxMesh},
                           .outline = Outline{.color = {0.5f, 0.2f, 0.3f}}},
-         .behaviours = {Pickable(0.5f)}}));
+         .behaviours = {Spin{}, Pickable(0.5f)}}));
 
     /// Lamps
 

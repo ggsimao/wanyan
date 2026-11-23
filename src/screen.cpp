@@ -1,29 +1,52 @@
 #include "screen.h"
 
+#include "data/frame_buffer_multisample.h"
 #include "render_state/capability.h"
 #include "scene/scene_renderer.h"
 #include "shaders/shader_program.h"
 #include "textures/draw_binding.h"
+#include "textures/helpers.h"
+#include "textures/texture_2d.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 Screen::Screen(GLsizei width, GLsizei height, const glm::vec4& clearColor,
-               const ShaderProgram& shader)
-    : _framebuffer(width, height), _canvas(_framebuffer.texture()),
-      _shader(shader) {
+               const ShaderProgram& shader,
+               const ShaderProgram& luminanceShader)
+    : _framebuffer(width, height),
+      _luminanceFramebuffer(256, 256, TextureType::LUMINANCE),
+      _canvas(_framebuffer.texture()), _shader(shader),
+      _luminanceShader(luminanceShader) {
+    Texture2DBinding(_luminanceFramebuffer.texture())
+        .setFilters(GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR);
     _parameters.clearColor = clearColor;
 }
 
 void Screen::drawOnFramebuffer(SceneRenderer& renderer, const Scene& scene,
                                EntityHandle cameraHandle) const {
-    DrawFrameBufferBinding target(_framebuffer);
+    DrawFrameBufferBindingMultisample target(_framebuffer);
     target.clear(_parameters.clearColor);
     renderer.compose(scene, cameraHandle);
 }
 
+void Screen::drawLuminance() const {
+    {
+        DrawFrameBufferBinding target(_luminanceFramebuffer);
+
+        render_state::Capability noDepth(GL_DEPTH_TEST, false);
+
+        TextureUnits units;
+        ShaderProgramBinding shader(_luminanceShader);
+        shader.setMat4("model", glm::mat4(1.0f));
+
+        _canvas.draw(shader, units);
+    }
+    Texture2DBinding(_luminanceFramebuffer.texture()).generateMipmap();
+}
+
 void Screen::drawOnAnother(const Screen& other, float scaling,
                            const glm::vec2& offset) const {
-    DrawFrameBufferBinding target(other._framebuffer);
+    DrawFrameBufferBindingMultisample target(other._framebuffer);
     // Scaled about the centre, then moved: what Rust did by cloning the canvas
     // object and transforming it every frame.
     const glm::mat4 model =
@@ -39,7 +62,8 @@ void Screen::drawOnAnother(const Screen& other, float scaling,
 }
 
 void Screen::drawOnScreen() const {
-    auto target = DrawFrameBufferBinding::screen();
+    auto target = DrawFrameBufferBinding::screen(_framebuffer.width(),
+                                                 _framebuffer.height());
     target.clear(glm::vec4(1.0f), GL_COLOR_BUFFER_BIT);
     present(glm::mat4(1.0f), _parameters);
 }
@@ -57,6 +81,8 @@ void Screen::present(const glm::mat4& model,
     shader.setBool("applyMSAA", effects.msaaOn);
     shader.setBool("crosshair", effects.crosshair);
     shader.setVec2("resolution", {_framebuffer.width(), _framebuffer.height()});
+    TextureDrawBinding luminanceTexture(units, _luminanceFramebuffer.texture());
+    shader.setTexture("luminanceLog2", luminanceTexture);
 
     _canvas.draw(shader, units);
 }

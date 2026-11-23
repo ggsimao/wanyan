@@ -9,9 +9,9 @@ template <typename T> inline constexpr bool restoreBindingOnExit = true;
 // before when the scope ends.
 //
 // T must provide a `bind() const` member and a static `clearBinding()`,
-// unless Bind and Clear are given explicitly (as FrameBuffer does, with one
-// pair of functions for each of its two binding targets). Each combination of
-// T, Bind and Clear is tracked separately.
+// unless Bind and Clear are given explicitly (as FrameBufferMultisample does,
+// with one pair of functions for each of its two binding targets). Each
+// combination of T, Bind and Clear is tracked separately.
 //
 // - The bound object must outlive the binding: the binding keeps a pointer to
 //   it, and binds it again when an inner binding ends. Constructing from

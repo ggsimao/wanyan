@@ -24,6 +24,9 @@ class Texture2D {
     Texture2D& operator=(Texture2D&& other) noexcept;
     ~Texture2D();
 
+    // Allocates (or reallocates, e.g. on resize) storage for width x height.
+    void createTexture(GLsizei width, GLsizei height);
+
     static Texture2D fromColor(TextureType type, const glm::vec3& color);
     // A shared 1x1 transparent black texture, for materials without maps.
     static TexturePtr empty();
