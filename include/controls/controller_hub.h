@@ -5,7 +5,7 @@
 #include "controls/platform_controller.h"
 #include "controls/program_controller.h"
 #include "controls/render_options_controller.h"
-#include "controls/screen_controller.h"
+#include "controls/view_controller.h"
 
 #include <memory>
 
@@ -13,7 +13,7 @@
 struct ControlTargets {
     Program& program;
     RenderOptions& renderOptions;
-    ScreenParameters& screen;
+    ViewParameters& view;
     Platform& platform;
 };
 
@@ -35,8 +35,7 @@ class ControllerHub {
         std::make_shared<ProgramController>();
     std::shared_ptr<RenderOptionsController> _renderOptions =
         std::make_shared<RenderOptionsController>();
-    std::shared_ptr<ScreenController> _screen =
-        std::make_shared<ScreenController>();
+    std::shared_ptr<ViewController> _view = std::make_shared<ViewController>();
     std::shared_ptr<InputState> _input = std::make_shared<InputState>();
     std::shared_ptr<PlatformController> _platform =
         std::make_shared<PlatformController>();

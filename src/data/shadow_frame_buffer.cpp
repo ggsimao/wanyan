@@ -7,7 +7,7 @@
 #include <utility>
 
 ShadowFrameBuffer::ShadowFrameBuffer(GLsizei width, GLsizei height)
-    : _texture(TextureType::ATTACHMENT), _width(width), _height(height) {
+    : _texture(TextureType::LDR_ATTACHMENT), _width(width), _height(height) {
     glGenFramebuffers(1, &_id);
     if (_id == 0)
         throw std::runtime_error("Couldn't make a shadow framebuffer");

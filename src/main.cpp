@@ -2,14 +2,16 @@
 #include "app/platform.h"
 #include "app/program.h"
 #include "controls/controller_hub.h"
+#include "data/frame_buffer.h"
 #include "data/uniform_buffer.h"
 #include "debug/frame_stats.h"
 #include "random.h"
 #include "scene/demo_scene.h"
 #include "scene/scene_renderer.h"
-#include "screen.h"
+#include "view.h"
 
 #include <CLI/CLI.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -76,11 +78,20 @@ int main(int argc, char** argv) {
         auto entities = buildDemoScene(scene);
 
         SceneRenderer renderer(shaders.forRenderer(), matrices);
-        Screen screen(platform.width(), platform.height(), CLEAR_COLOR,
-                      shaders.screen, shaders.luminance);
+        View screen(platform.width(), platform.height(), CLEAR_COLOR);
         screen.parameters().crosshair = true;
-        Screen mirror(platform.width(), platform.height(), CLEAR_COLOR,
-                      shaders.screen, shaders.luminance);
+        View mirror(INSET_SCALE * platform.width(),
+                    INSET_SCALE * platform.height(), CLEAR_COLOR);
+
+        glm::mat4 mirrorPlacement =
+            glm::translate(glm::mat4(1.0f), glm::vec3(INSET_OFFSET, 0.0f)) *
+            glm::scale(glm::mat4(1.0f),
+                       glm::vec3(INSET_SCALE, INSET_SCALE, 1.0f));
+        glm::mat4 regularPlacement = glm::identity<glm::mat4>();
+
+        const PostShaders postShaders = {.resolve = shaders.screen.resolve,
+                                         .luminance = shaders.screen.luminance,
+                                         .tonemap = shaders.screen.tonemap};
 
         Program program;
         ControllerHub controls;
@@ -105,7 +116,7 @@ int main(int argc, char** argv) {
                 auto timer = stats.time(debug::FrameStats::UPDATE);
                 controls.update({.program = program,
                                  .renderOptions = renderer.options(),
-                                 .screen = screen.parameters(),
+                                 .view = screen.parameters(),
                                  .platform = platform});
                 scene.update(context);
             }
@@ -124,18 +135,30 @@ int main(int argc, char** argv) {
             {
                 auto timer = stats.time(debug::FrameStats::DRAW);
                 const auto mainCamera = scene.getActiveCamera();
-                screen.drawOnFramebuffer(renderer, scene,
-                                         mainCamera->getHandle());
-                screen.drawLuminance();
+                screen.drawScene(renderer, scene, mainCamera->getHandle());
+                screen.postProcess(postShaders);
                 if (screen.parameters().mirror &&
                     mainCamera->getChildrenCount() > 0) {
                     const auto backCamera = mainCamera->getChild(0);
-                    if (backCamera)
-                        mirror.drawOnFramebuffer(renderer, scene,
-                                                 backCamera->getHandle());
-                    mirror.drawOnAnother(screen, INSET_SCALE, INSET_OFFSET);
+                    if (backCamera) {
+                        auto &mirrorParameters = mirror.parameters(),
+                             &screenParameters = screen.parameters();
+                        mirrorParameters.filterOn = screenParameters.filterOn;
+                        mirrorParameters.msaaOn = screenParameters.msaaOn;
+                        mirrorParameters.gamma = screenParameters.gamma;
+
+                        mirror.drawScene(renderer, scene,
+                                         backCamera->getHandle());
+                        mirror.postProcess(postShaders);
+                        mirror.present(shaders.screen.present,
+                                       DrawFrameBufferBinding(screen.output()),
+                                       mirrorPlacement);
+                    }
                 }
-                screen.drawOnScreen();
+                screen.present(shaders.screen.present,
+                               DrawFrameBufferBinding::screen(
+                                   platform.width(), platform.height()),
+                               regularPlacement);
             }
 
             platform.swapBuffers();

@@ -1,8 +1,8 @@
-#include "controls/screen_controller.h"
+#include "controls/view_controller.h"
 
 #include <algorithm>
 
-void ScreenController::onKeyPressed(const SDL_Keysym& key) {
+void ViewController::onKeyPressed(const SDL_Keysym& key) {
     switch (key.sym) {
         case SDLK_x:
             _filterOn = !_filterOn;
@@ -24,13 +24,13 @@ void ScreenController::onKeyPressed(const SDL_Keysym& key) {
     }
 }
 
-void ScreenController::onSignal(const SignalType& signal) {
+void ViewController::onSignal(const SignalType& signal) {
     if (const auto* pressed = std::get_if<SignalKeyPressed>(&signal)) {
         onKeyPressed(pressed->code);
     }
 }
 
-void ScreenController::processSignals(ScreenParameters& parameters) {
+void ViewController::processSignals(ViewParameters& parameters) {
     parameters.filterOn = _filterOn;
     parameters.msaaOn = _msaaOn;
     parameters.mirror = _mirror;

@@ -280,7 +280,8 @@ vec3 calculateDirectionalLight(DirLight light, vec3 normal, vec3 fragPos,
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+    float spec =
+        pow(max(dot(normal, halfwayDir), 0.0), max(material.shininess, 1.0));
 
     // float shadow = 0;
     float shadow = calculateDirShadowValue(
@@ -303,7 +304,8 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos,
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+    float spec =
+        pow(max(dot(normal, halfwayDir), 0.0), max(material.shininess, 1.0));
 
     float attenuation =
         calculateAttenuation(light.position, fragPos, light.attenuation);
@@ -330,11 +332,13 @@ vec3 calculateSpotlight(Spotlight light, vec3 normal, vec3 fragPos,
     float diff = max(dot(normal, lightDir), 0.0);
 
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+    float spec =
+        pow(max(dot(normal, halfwayDir), 0.0), max(material.shininess, 1.0));
 
     float theta = dot(lightDir, normalize(-light.direction));
-    float intensity = clamp(
-        (theta - light.gammaCos) / (light.phiCos - light.gammaCos), 0.0, 1.0);
+    float intensity = clamp((theta - light.gammaCos) /
+                                max(light.phiCos - light.gammaCos, 1e-4),
+                            0.0, 1.0);
 
     float attenuation =
         calculateAttenuation(light.position, fragPos, light.attenuation);
@@ -371,7 +375,7 @@ void main() {
                                        texCoords.x < 0.0 || texCoords.y < 0.0))
         discard;
 
-    vec3 normal = fs_in.normal;
+    vec3 normal = normalize(fs_in.normal);
     if (material.hasNormalMap) {
         normal = textureGrad(material.normalTexture, texCoords, dx, dy).rgb;
         normal = normal * 2.0 - 1.0;

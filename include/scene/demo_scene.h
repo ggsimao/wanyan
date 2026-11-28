@@ -15,15 +15,21 @@
 // The rocks are scene.objects[0], with this many instances.
 inline constexpr std::size_t ROCK_INSTANCES = 1000;
 
+struct ScreenShaders {
+    ShaderProgram resolve;
+    ShaderProgram luminance;
+    ShaderProgram tonemap;
+    ShaderProgram present;
+};
+
 // All the programs, owned together. Keep alive for as long as anything draws.
 struct DemoShaders {
     ShaderProgram object;
     ShaderProgram debug;
     ShaderProgram outline;
-    ShaderProgram screen;
     ShaderProgram skybox;
     ShaderProgram shadow;
-    ShaderProgram luminance;
+    ScreenShaders screen;
     PointShadowShader pointShadow;
 
     // The references SceneRenderer draws with.

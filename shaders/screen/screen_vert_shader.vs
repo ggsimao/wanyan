@@ -2,7 +2,7 @@
 layout(location = 0) in vec3 aPos;
 layout(location = 2) in vec2 aTexCoords;
 
-// Set by Screen: identity for the full window, scaled and offset for an inset.
+// Set by View: identity for the full window, scaled and offset for an inset.
 uniform mat4 model;
 
 out vec2 texCoords;

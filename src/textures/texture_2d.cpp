@@ -132,7 +132,7 @@ TexturePtr Texture2D::empty() {
         return existing;
     }
 
-    Texture2D texture(TextureType::ATTACHMENT);
+    Texture2D texture(TextureType::LDR_ATTACHMENT);
     {
         Texture2DBinding tex(texture);
         tex.image(texture.internalFormat(), 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -190,8 +190,10 @@ GLenum Texture2D::internalFormat() const {
                                      // linear
         case TextureType::SPECULAR:
             return GL_RGBA8;  // data: read as-is
-        case TextureType::ATTACHMENT:
+        case TextureType::LDR_ATTACHMENT:
             return GL_RGBA8;
+        case TextureType::HDR_ATTACHMENT:
+            return GL_RGBA16F;
         case TextureType::NORMAL:
             return GL_RGBA8;
         case TextureType::DEPTH:

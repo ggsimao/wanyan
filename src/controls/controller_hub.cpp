@@ -3,7 +3,7 @@
 ControllerHub::ControllerHub() {
     _handler.connect(_program);
     _handler.connect(_renderOptions);
-    _handler.connect(_screen);
+    _handler.connect(_view);
     _handler.connect(_input);
     _handler.connect(_platform);
 }
@@ -17,6 +17,6 @@ void ControllerHub::update(const ControlTargets& targets) {
 
     _program->processSignals(targets.program);
     _renderOptions->processSignals(targets.renderOptions);
-    _screen->processSignals(targets.screen);
+    _view->processSignals(targets.view);
     _platform->processSignals(targets.platform);
 }

@@ -13,7 +13,7 @@
 class FrameBuffer {
   public:
     FrameBuffer(GLsizei width, GLsizei height,
-                TextureType type = TextureType::ATTACHMENT);
+                TextureType type = TextureType::LDR_ATTACHMENT);
     FrameBuffer(const FrameBuffer&) = delete;
     FrameBuffer& operator=(const FrameBuffer&) = delete;
     FrameBuffer(FrameBuffer&& other) noexcept;
@@ -65,17 +65,20 @@ class DrawFrameBufferBinding : DrawBindingBase {
                                                          GL_DEPTH_BUFFER_BIT |
                                                          GL_STENCIL_BUFFER_BIT);
     GLenum status() const;
+    GLsizei width() const;
+    GLsizei height() const;
 
     using DrawBindingBase::assertActive;
 
   private:
     explicit DrawFrameBufferBinding(std::nullptr_t, GLsizei width,
                                     GLsizei height)
-        : DrawBindingBase(nullptr) {
+        : DrawBindingBase(nullptr), _width(width), _height(height) {
         glViewport(0, 0, width, height);
         glGetIntegerv(GL_VIEWPORT, _previousViewport);
     }
     GLint _previousViewport[4] = {0, 0, 0, 0};
+    GLsizei _width, _height;
 };
 
 // Where pixels come from: glReadPixels and the source side of a blit.

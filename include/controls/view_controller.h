@@ -1,14 +1,14 @@
 #pragma once
 
 #include "controls/controls.h"
-#include "screen.h"
+#include "view.h"
 
-// Screen effects: E toggles edge filter, M toggles the shader's MSAA
+// View effects: E toggles edge filter, M toggles the shader's MSAA
 // resolve, = and - raise and lower gamma in steps of 0.2 (between 1 and 3).
-class ScreenController : public Slot, public Controller<ScreenParameters> {
+class ViewController : public Slot, public Controller<ViewParameters> {
   public:
     void onSignal(const SignalType& signal) override;
-    void processSignals(ScreenParameters& parameters) override;
+    void processSignals(ViewParameters& parameters) override;
 
   private:
     void onKeyPressed(const SDL_Keysym& key);

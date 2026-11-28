@@ -3,7 +3,8 @@
 enum class TextureType {
     DIFFUSE,
     SPECULAR,
-    ATTACHMENT,
+    LDR_ATTACHMENT,
+    HDR_ATTACHMENT,
     NORMAL,
     DEPTH,  // parallax depth map: white is deepest
     LUMINANCE,

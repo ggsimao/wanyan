@@ -57,10 +57,16 @@ namespace {
     constexpr const char* DEBUG_GEO_SHADER = "shaders/debug_geo_shader.gs";
     constexpr const char* DEBUG_FRAG_SHADER = "shaders/debug_frag_shader.fs";
     constexpr const char* BUFFER_FRAG_SHADER = "shaders/buffer_frag_shader.fs";
-    constexpr const char* SCREEN_VERT_SHADER = "shaders/screen_vert_shader.vs";
-    constexpr const char* SCREEN_FRAG_SHADER = "shaders/screen_frag_shader.fs";
+    constexpr const char* SCREEN_VERT_SHADER =
+        "shaders/screen/screen_vert_shader.vs";
+    constexpr const char* RESOLVE_FRAG_SHADER =
+        "shaders/screen/resolve_frag_shader.fs";
     constexpr const char* LUMINANCE_FRAG_SHADER =
-        "shaders/luminance_frag_shader.fs";
+        "shaders/screen/luminance_frag_shader.fs";
+    constexpr const char* TONEMAP_FRAG_SHADER =
+        "shaders/screen/tonemap_frag_shader.fs";
+    constexpr const char* PRESENT_FRAG_SHADER =
+        "shaders/screen/present_frag_shader.fs";
     constexpr const char* SKYBOX_VERT_SHADER = "shaders/skybox_vert_shader.vs";
     constexpr const char* SKYBOX_FRAG_SHADER = "shaders/skybox_frag_shader.fs";
     constexpr const char* SHADOW_VERT_SHADER = "shaders/shadow_vert_shader.vs";
@@ -144,22 +150,30 @@ DemoShaders loadDemoShaders(const GpuFeatures& gpuFeatures) {
                   asset(POINTSHADOW_GEO_SHADER),
                   asset(POINTSHADOW_FRAG_SHADER));
     return {
-        ShaderProgram::fromFiles("Object", asset(REGULAR_VERT_SHADER),
-                                 asset(OBJECT_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Debug", asset(DEBUG_VERT_SHADER),
-                                 asset(DEBUG_GEO_SHADER),
-                                 asset(DEBUG_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Buffer", asset(REGULAR_VERT_SHADER),
-                                 asset(BUFFER_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Screen", asset(SCREEN_VERT_SHADER),
-                                 asset(SCREEN_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER),
-                                 asset(SKYBOX_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER),
-                                 asset(SHADOW_FRAG_SHADER)),
-        ShaderProgram::fromFiles("Luminance", asset(SCREEN_VERT_SHADER),
-                                 asset(LUMINANCE_FRAG_SHADER)),
-        std::move(pointShadow),
+        .object = ShaderProgram::fromFiles("Object", asset(REGULAR_VERT_SHADER),
+                                           asset(OBJECT_FRAG_SHADER)),
+        .debug = ShaderProgram::fromFiles("Debug", asset(DEBUG_VERT_SHADER),
+                                          asset(DEBUG_GEO_SHADER),
+                                          asset(DEBUG_FRAG_SHADER)),
+        .outline = ShaderProgram::fromFiles(
+            "Buffer", asset(REGULAR_VERT_SHADER), asset(BUFFER_FRAG_SHADER)),
+        .skybox = ShaderProgram::fromFiles("Skybox", asset(SKYBOX_VERT_SHADER),
+                                           asset(SKYBOX_FRAG_SHADER)),
+        .shadow = ShaderProgram::fromFiles("Shadow", asset(SHADOW_VERT_SHADER),
+                                           asset(SHADOW_FRAG_SHADER)),
+        .screen = {.resolve = ShaderProgram::fromFiles(
+                       "Resolve", asset(SCREEN_VERT_SHADER),
+                       asset(RESOLVE_FRAG_SHADER)),
+                   .luminance = ShaderProgram::fromFiles(
+                       "Luminance", asset(SCREEN_VERT_SHADER),
+                       asset(LUMINANCE_FRAG_SHADER)),
+                   .tonemap = ShaderProgram::fromFiles(
+                       "Tone mapping", asset(SCREEN_VERT_SHADER),
+                       asset(TONEMAP_FRAG_SHADER)),
+                   .present = ShaderProgram::fromFiles(
+                       "Present", asset(SCREEN_VERT_SHADER),
+                       asset(PRESENT_FRAG_SHADER))},
+        .pointShadow = std::move(pointShadow),
     };
 }
 
@@ -272,7 +286,7 @@ std::vector<EntityHandle> buildDemoScene(Scene& scene) {
                                      .on = true,
                                      .kind = DirectionalLight{},
                                      .castsShadows = true},
-                      .behaviours = {SkyLightCycle(1.0f, 100.0f)}});
+                      .behaviours = {SkyLightCycle(1.0f, 50.0f)}});
 
     entities.push_back(skyPivot);
     entities.push_back(season);

@@ -1,5 +1,6 @@
 #include "data/frame_buffer.h"
 #include "textures/helpers.h"
+#include "textures/texture_2d.h"
 
 #include <stb/stb_image_write.h>
 
@@ -60,6 +61,9 @@ FrameBuffer::FrameBuffer(GLsizei width, GLsizei height, TextureType type)
         DrawFrameBufferBinding bound(*this);
 
         _texture.createTexture(_width, _height);
+        Texture2DBinding texture(_texture);
+        texture.setFilters(GL_LINEAR, GL_LINEAR);
+        texture.setWrapping(GL_CLAMP_TO_EDGE);
         bound.attachColor(_texture);
 
         {
@@ -188,6 +192,10 @@ GLenum DrawFrameBufferBinding::status() const {
     assertActive();
     return glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 }
+
+GLsizei DrawFrameBufferBinding::width() const { return _width; }
+
+GLsizei DrawFrameBufferBinding::height() const { return _height; }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
